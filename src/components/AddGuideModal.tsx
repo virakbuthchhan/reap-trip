@@ -67,7 +67,7 @@ export const AddGuideModal: React.FC<AddGuideModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className={`modal-content ${isMaximized ? 'is-maximized' : ''}`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '620px' }}>
+      <div className={`modal-content guide-modal-box ${isMaximized ? 'is-maximized' : ''}`} onClick={(e) => e.stopPropagation()}>
         {/* Sticky Fixed Header */}
         <div className="modal-header-sticky">
           <div className="modal-header-title-wrap">

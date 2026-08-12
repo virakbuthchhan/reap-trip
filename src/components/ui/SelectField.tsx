@@ -175,15 +175,32 @@ export const SelectField: React.FC<SelectFieldProps> = ({
           box-shadow: var(--shadow-sm);
         }
 
+        [data-theme="light"] .custom-select-trigger {
+          background: #ffffff;
+          border-color: rgba(15, 23, 42, 0.16);
+          color: #0f172a;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+
         .custom-select-trigger:hover {
           border-color: var(--primary-glow);
           background: var(--bg-card-hover);
+        }
+
+        [data-theme="light"] .custom-select-trigger:hover {
+          background: #f8fafc;
+          border-color: rgba(5, 150, 105, 0.42);
         }
 
         .custom-select-trigger.is-open {
           border-color: var(--primary);
           background: var(--bg-card);
           box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+
+        [data-theme="light"] .custom-select-trigger.is-open {
+          background: #ffffff;
+          box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.14), 0 1px 2px rgba(15, 23, 42, 0.06);
         }
 
         .trigger-content {
@@ -205,6 +222,13 @@ export const SelectField: React.FC<SelectFieldProps> = ({
           display: flex;
           align-items: center;
           gap: 0.5rem;
+          min-width: 0;
+        }
+
+        .selected-label {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .placeholder-text {
@@ -236,6 +260,12 @@ export const SelectField: React.FC<SelectFieldProps> = ({
           box-shadow: var(--shadow-lg);
           overflow: hidden;
           animation: slideDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="light"] .custom-dropdown-menu {
+          background: #ffffff;
+          border-color: rgba(5, 150, 105, 0.28);
+          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
         }
 
         @keyframes slideDown {
@@ -274,10 +304,20 @@ export const SelectField: React.FC<SelectFieldProps> = ({
           color: #ffffff;
         }
 
+        [data-theme="light"] .custom-option-item:hover {
+          background: #ecfdf5;
+          color: #047857;
+        }
+
         .custom-option-item.selected {
           background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(4, 120, 87, 0.35) 100%);
           color: #ffffff;
           font-weight: 600;
+        }
+
+        [data-theme="light"] .custom-option-item.selected {
+          background: #d1fae5;
+          color: #064e3b;
         }
 
         .option-item-content {

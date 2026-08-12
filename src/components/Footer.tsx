@@ -62,6 +62,10 @@ export const Footer: React.FC = () => {
           padding: 3rem 0 0 0;
           margin-top: 4rem;
         }
+        [data-theme="light"] .site-footer {
+          background: #f8fafc;
+          border-top-color: rgba(15, 23, 42, 0.1);
+        }
         .footer-container {
           display: grid;
           grid-template-columns: 2fr 1fr 1fr;
@@ -78,6 +82,11 @@ export const Footer: React.FC = () => {
           font-size: 0.9rem;
           line-height: 1.6;
           max-width: 480px;
+        }
+        .site-footer .brand-text h1 {
+          background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
         .footer-links h4 {
           font-size: 1rem;
@@ -100,6 +109,10 @@ export const Footer: React.FC = () => {
           background: rgba(0, 0, 0, 0.4);
           font-size: 0.85rem;
           color: var(--text-muted);
+        }
+        [data-theme="light"] .footer-bottom {
+          background: #ffffff;
+          border-top-color: rgba(15, 23, 42, 0.1);
         }
         .mb-2 {
           margin-bottom: 0.5rem;

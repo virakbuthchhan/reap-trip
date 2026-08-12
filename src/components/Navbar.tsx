@@ -501,6 +501,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           box-shadow: 0 0 16px var(--primary-glow);
         }
 
+        [data-theme="light"] .menu-card-item.active {
+          background: #ecfdf5;
+          border-color: rgba(5, 150, 105, 0.55);
+          box-shadow: 0 8px 20px rgba(5, 150, 105, 0.16);
+        }
+
         .menu-card-icon-wrap {
           width: 38px;
           height: 38px;
@@ -551,6 +557,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           color: #ffffff;
         }
 
+        [data-theme="light"] .menu-card-item.active .menu-card-label {
+          color: #064e3b;
+        }
+
         .menu-card-sub {
           font-size: 0.65rem;
           color: var(--text-dim);
@@ -563,6 +573,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         .menu-card-item.active .menu-card-sub {
           color: #a7f3d0;
+        }
+
+        [data-theme="light"] .menu-card-item.active .menu-card-sub {
+          color: #047857;
         }
 
         .active-glow-indicator {
