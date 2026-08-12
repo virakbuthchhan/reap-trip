@@ -397,29 +397,46 @@ export const TripExperienceSharing: React.FC<TripExperienceSharingProps> = ({
           flex-wrap: wrap;
         }
 
-        .comment-name-input {
-          width: 120px;
-          background: rgba(0, 0, 0, 0.4);
-          border: 1px solid var(--border-light);
-          border-radius: var(--radius-sm);
-          padding: 0.45rem 0.65rem;
-          color: #fff;
+        .comment-name-input,
+        .comment-text-input {
+          background: var(--input-bg);
+          border: 1.5px solid var(--input-border);
+          border-radius: var(--radius-md);
+          padding: 0.5rem 0.75rem;
+          color: var(--text-main);
           font-family: var(--font-main);
-          font-size: 0.85rem;
+          font-size: 0.88rem;
           outline: none;
+          transition: var(--transition);
+          box-shadow: var(--input-shadow);
+        }
+
+        .comment-name-input {
+          width: 130px;
         }
 
         .comment-text-input {
           flex: 1;
           min-width: 160px;
-          background: rgba(0, 0, 0, 0.4);
-          border: 1px solid var(--border-light);
-          border-radius: var(--radius-sm);
-          padding: 0.45rem 0.65rem;
-          color: #fff;
-          font-family: var(--font-main);
-          font-size: 0.85rem;
-          outline: none;
+        }
+
+        .comment-name-input::placeholder,
+        .comment-text-input::placeholder {
+          color: var(--text-dim);
+          opacity: 0.85;
+        }
+
+        .comment-name-input:hover,
+        .comment-text-input:hover {
+          border-color: var(--input-border-hover);
+          background: var(--input-bg-hover);
+        }
+
+        .comment-name-input:focus,
+        .comment-text-input:focus {
+          border-color: var(--primary);
+          background: var(--input-bg-focus);
+          box-shadow: var(--input-focus-shadow);
         }
 
         @media (max-width: 640px) {

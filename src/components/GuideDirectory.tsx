@@ -445,10 +445,20 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
           padding: 1.25rem;
         }
 
+        [data-theme="light"] .rounded-guide-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
         .rounded-guide-card:hover {
           transform: translateY(-3px);
           border-color: rgba(16, 185, 129, 0.4);
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="light"] .rounded-guide-card:hover {
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
         }
 
         /* GRID VIEW LAYOUT */
@@ -585,6 +595,12 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
           flex-wrap: wrap;
         }
 
+        [data-theme="light"] .guide-meta-pill-box {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
         .meta-pill {
           display: flex;
           align-items: center;
@@ -599,7 +615,12 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
         }
 
         .meta-val {
-          color: #ffffff;
+          color: var(--text-main);
+          font-weight: 600;
+        }
+
+        [data-theme="light"] .meta-val {
+          color: #0f172a;
         }
 
         .lang-chips {

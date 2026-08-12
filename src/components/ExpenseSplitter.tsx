@@ -271,6 +271,7 @@ export const ExpenseSplitter: React.FC = () => {
             <form onSubmit={handleAddMember} className="add-member-form">
               <input
                 type="text"
+                className="custom-modern-input"
                 placeholder={language === 'km' ? 'បន្ថែមឈ្មោះសមាជិកថ្មី...' : 'Add new member name...'}
                 value={newMemberName}
                 onChange={(e) => setNewMemberName(e.target.value)}
@@ -516,14 +517,29 @@ export const ExpenseSplitter: React.FC = () => {
         }
         .add-member-form input {
           flex: 1;
-          background: rgba(0, 0, 0, 0.4);
-          border: 1px solid var(--border-light);
-          border-radius: var(--radius-sm);
-          padding: 0.5rem 0.85rem;
-          color: #fff;
+          background: var(--input-bg);
+          border: 1.5px solid var(--input-border);
+          border-radius: var(--radius-md);
+          padding: 0.55rem 0.85rem;
+          color: var(--text-main);
           font-family: var(--font-main);
-          font-size: 0.85rem;
+          font-size: 0.9rem;
           outline: none;
+          transition: var(--transition);
+          box-shadow: var(--input-shadow);
+        }
+        .add-member-form input::placeholder {
+          color: var(--text-dim);
+          opacity: 0.85;
+        }
+        .add-member-form input:hover {
+          border-color: var(--input-border-hover);
+          background: var(--input-bg-hover);
+        }
+        .add-member-form input:focus {
+          border-color: var(--primary);
+          background: var(--input-bg-focus);
+          box-shadow: var(--input-focus-shadow);
         }
         .expenses-list {
           display: flex;

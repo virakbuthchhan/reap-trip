@@ -216,14 +216,29 @@ export const PackingChecklist: React.FC<PackingChecklistProps> = ({ initialItems
         }
         .add-item-form input {
           flex: 1;
-          background: rgba(0, 0, 0, 0.4);
-          border: 1px solid var(--border-light);
-          border-radius: var(--radius-sm);
+          background: var(--input-bg);
+          border: 1.5px solid var(--input-border);
+          border-radius: var(--radius-md);
           padding: 0.6rem 0.85rem;
-          color: #fff;
+          color: var(--text-main);
           font-family: var(--font-main);
           font-size: 0.9rem;
           outline: none;
+          transition: var(--transition);
+          box-shadow: var(--input-shadow);
+        }
+        .add-item-form input::placeholder {
+          color: var(--text-dim);
+          opacity: 0.85;
+        }
+        .add-item-form input:hover {
+          border-color: var(--input-border-hover);
+          background: var(--input-bg-hover);
+        }
+        .add-item-form input:focus {
+          border-color: var(--primary);
+          background: var(--input-bg-focus);
+          box-shadow: var(--input-focus-shadow);
         }
         .items-list-rows {
           display: flex;

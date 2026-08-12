@@ -321,21 +321,6 @@ export const AddExperienceModal: React.FC<AddExperienceModalProps> = ({
       <style>{`
         .experience-modal-box {
           max-width: 680px;
-          padding: 2rem !important;
-          border-radius: var(--radius-lg);
-          background: rgba(14, 24, 18, 0.98);
-          backdrop-filter: blur(20px);
-          border: 1px solid var(--border-glow);
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(16, 185, 129, 0.15);
-        }
-
-        .modal-header-text {
-          margin-bottom: 1.5rem;
-        }
-
-        .modal-header-text h3 {
-          font-size: 1.4rem;
-          margin-bottom: 0.35rem;
         }
 
         .attachment-upload-section {
@@ -344,7 +329,12 @@ export const AddExperienceModal: React.FC<AddExperienceModalProps> = ({
           border-radius: var(--radius-md);
           padding: 1rem;
           margin-top: 0.5rem;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
+        }
+
+        [data-theme="light"] .attachment-upload-section {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
         }
 
         .attachment-header-row {
@@ -385,6 +375,11 @@ export const AddExperienceModal: React.FC<AddExperienceModalProps> = ({
           text-align: center;
         }
 
+        [data-theme="light"] .dropzone-box {
+          background: rgba(5, 150, 105, 0.04);
+          border-color: rgba(5, 150, 105, 0.3);
+        }
+
         .dropzone-box:hover {
           border-color: var(--primary);
           background: rgba(16, 185, 129, 0.08);
@@ -398,7 +393,7 @@ export const AddExperienceModal: React.FC<AddExperienceModalProps> = ({
         .dropzone-text strong {
           display: block;
           font-size: 0.9rem;
-          color: #ffffff;
+          color: var(--text-main);
         }
 
         .dropzone-text span {
@@ -468,39 +463,6 @@ export const AddExperienceModal: React.FC<AddExperienceModalProps> = ({
           font-weight: 700;
           padding: 0.1rem 0.35rem;
           border-radius: 3px;
-        }
-
-        /* Form Actions Bar with Generous Spacing and Gap */
-        .form-actions-bar {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 1.25rem;
-          margin-top: 2rem;
-          padding-top: 1.25rem;
-          border-top: 1px solid var(--border-light);
-        }
-
-        .btn-modal-action {
-          padding: 0.75rem 1.5rem;
-          font-size: 0.95rem;
-          border-radius: var(--radius-md);
-        }
-
-        @media (max-width: 640px) {
-          .experience-modal-box {
-            padding: 1.25rem !important;
-          }
-          .form-actions-bar {
-            flex-direction: column-reverse;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-          }
-          .btn-modal-action {
-            width: 100%;
-            justify-content: center;
-          }
         }
       `}</style>
     </div>
