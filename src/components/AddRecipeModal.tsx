@@ -178,6 +178,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
                   <div key={idx} className="ing-input-row">
                     <input
                       type="text"
+                      className="custom-modern-input"
                       placeholder="Ingredient name (e.g. Pork)"
                       value={ing.name}
                       onChange={(e) => {
@@ -188,7 +189,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
                     />
                     <input
                       type="number"
-                      style={{ width: '90px' }}
+                      className="custom-modern-input"
+                      style={{ width: '95px' }}
                       placeholder="Amount"
                       value={ing.amountPerPerson}
                       onChange={(e) => {
@@ -199,7 +201,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
                     />
                     <input
                       type="text"
-                      style={{ width: '80px' }}
+                      className="custom-modern-input"
+                      style={{ width: '85px' }}
                       placeholder="Unit (g, ml)"
                       value={ing.unit}
                       onChange={(e) => {
@@ -210,7 +213,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
                     />
                     {ingredients.length > 1 && (
                       <button type="button" className="remove-row-btn" onClick={() => handleRemoveIngredientRow(idx)}>
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </div>
@@ -249,7 +252,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
         .ingredients-form-rows {
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.6rem;
         }
 
         .ing-input-row {
@@ -258,14 +261,9 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
           align-items: center;
         }
 
-        .ing-input-row input {
-          background: rgba(0, 0, 0, 0.4);
-          border: 1px solid var(--border-light);
-          border-radius: var(--radius-sm);
-          padding: 0.45rem 0.65rem;
-          color: #fff;
-          font-size: 0.85rem;
-          outline: none;
+        .ing-input-row .custom-modern-input {
+          padding: 0.55rem 0.75rem;
+          font-size: 0.9rem;
         }
 
         .ing-input-row input:first-child {
@@ -277,10 +275,17 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
           border: none;
           color: var(--text-dim);
           cursor: pointer;
+          padding: 0.45rem;
+          border-radius: var(--radius-sm);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: var(--transition);
         }
 
         .remove-row-btn:hover {
           color: var(--accent-red);
+          background: rgba(239, 68, 68, 0.12);
         }
       `}</style>
     </div>

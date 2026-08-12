@@ -224,14 +224,36 @@ export default function RecipeDetailPage() {
         }
 
         .counter-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           width: 26px;
           height: 26px;
           border-radius: 50%;
           background: rgba(255, 255, 255, 0.1);
           border: 1px solid var(--border-light);
-          color: #fff;
+          color: var(--text-main);
           font-weight: bold;
           cursor: pointer;
+          transition: var(--transition);
+        }
+
+        .counter-btn:hover {
+          background: var(--primary-light);
+          color: var(--primary);
+          border-color: var(--primary);
+        }
+
+        [data-theme="light"] .counter-btn {
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          color: #0f172a;
+        }
+
+        [data-theme="light"] .counter-btn:hover {
+          background: var(--primary-light);
+          color: #047857;
+          border-color: var(--primary);
         }
 
         .recipe-body-grid {

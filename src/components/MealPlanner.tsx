@@ -329,14 +329,36 @@ export const MealPlanner: React.FC<MealPlannerProps> = ({ recipes, onAddRecipe }
         }
 
         .counter-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           width: 28px;
           height: 28px;
           border-radius: 50%;
           background: rgba(255, 255, 255, 0.1);
           border: 1px solid var(--border-light);
-          color: #fff;
+          color: var(--text-main);
           font-weight: bold;
           cursor: pointer;
+          transition: var(--transition);
+        }
+
+        .counter-btn:hover {
+          background: var(--primary-light);
+          color: var(--primary);
+          border-color: var(--primary);
+        }
+
+        [data-theme="light"] .counter-btn {
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          color: #0f172a;
+        }
+
+        [data-theme="light"] .counter-btn:hover {
+          background: var(--primary-light);
+          color: #047857;
+          border-color: var(--primary);
         }
 
         .meal-tab-bar {
@@ -385,6 +407,12 @@ export const MealPlanner: React.FC<MealPlannerProps> = ({ recipes, onAddRecipe }
           padding: 3px;
         }
 
+        [data-theme="light"] .view-mode-toggle {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
         .view-btn {
           display: flex;
           align-items: center;
@@ -401,9 +429,24 @@ export const MealPlanner: React.FC<MealPlannerProps> = ({ recipes, onAddRecipe }
           transition: var(--transition);
         }
 
+        [data-theme="light"] .view-btn {
+          color: #475569;
+        }
+
+        [data-theme="light"] .view-btn:hover {
+          color: #0f172a;
+          background: #f1f5f9;
+        }
+
         .view-btn.active {
           background: var(--primary);
           color: #ffffff;
+        }
+
+        [data-theme="light"] .view-btn.active {
+          background: var(--primary);
+          color: #ffffff;
+          box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
         }
 
         .recipe-card-link {
@@ -543,6 +586,24 @@ export const MealPlanner: React.FC<MealPlannerProps> = ({ recipes, onAddRecipe }
           margin-bottom: 0.85rem;
           font-size: 0.82rem;
           border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="light"] .ingredients-preview-list {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          color: #334155;
+        }
+
+        [data-theme="light"] .ingredients-preview-list strong {
+          color: #0f172a;
+        }
+
+        [data-theme="light"] .ingredients-preview-list li span {
+          color: #475569;
+        }
+
+        [data-theme="light"] .ingredients-preview-list li strong {
+          color: #047857;
         }
 
         .ingredients-preview-list ul {
