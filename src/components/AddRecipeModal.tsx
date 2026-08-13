@@ -255,46 +255,6 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
         </form>
       </div>
 
-      <style>{`
-        .ingredients-form-rows {
-          display: flex;
-          flex-direction: column;
-          gap: 0.6rem;
-        }
-
-        .ing-input-row {
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-        }
-
-        .ing-input-row .custom-modern-input {
-          padding: 0.55rem 0.75rem;
-          font-size: 0.9rem;
-        }
-
-        .ing-input-row input:first-child {
-          flex: 1;
-        }
-
-        .remove-row-btn {
-          background: transparent;
-          border: none;
-          color: var(--text-dim);
-          cursor: pointer;
-          padding: 0.45rem;
-          border-radius: var(--radius-sm);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: var(--transition);
-        }
-
-        .remove-row-btn:hover {
-          color: var(--accent-red);
-          background: rgba(239, 68, 68, 0.12);
-        }
-      `}</style>
     </div>
   );
 };

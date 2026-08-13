@@ -55,69 +55,6 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      <style>{`
-        .site-footer {
-          background: #050b07;
-          border-top: 1px solid var(--border-light);
-          padding: 3rem 0 0 0;
-          margin-top: 4rem;
-        }
-        [data-theme="light"] .site-footer {
-          background: #f8fafc;
-          border-top-color: rgba(15, 23, 42, 0.1);
-        }
-        .footer-container {
-          display: grid;
-          grid-template-columns: 2fr 1fr 1fr;
-          gap: 2rem;
-          margin-bottom: 2.5rem;
-        }
-        @media (max-width: 768px) {
-          .footer-container {
-            grid-template-columns: 1fr;
-          }
-        }
-        .footer-desc {
-          color: var(--text-muted);
-          font-size: 0.9rem;
-          line-height: 1.6;
-          max-width: 480px;
-        }
-        .site-footer .brand-text h1 {
-          background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .footer-links h4 {
-          font-size: 1rem;
-          margin-bottom: 1rem;
-          color: var(--primary);
-        }
-        .footer-links ul {
-          list-style: none;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-        .footer-links li {
-          color: var(--text-muted);
-          font-size: 0.85rem;
-        }
-        .footer-bottom {
-          border-top: 1px solid var(--border-light);
-          padding: 1.25rem 0;
-          background: rgba(0, 0, 0, 0.4);
-          font-size: 0.85rem;
-          color: var(--text-muted);
-        }
-        [data-theme="light"] .footer-bottom {
-          background: #ffffff;
-          border-top-color: rgba(15, 23, 42, 0.1);
-        }
-        .mb-2 {
-          margin-bottom: 0.5rem;
-        }
-      `}</style>
     </footer>
   );
 };

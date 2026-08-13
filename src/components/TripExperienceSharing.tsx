@@ -70,28 +70,6 @@ export const TripExperienceSharing: React.FC<TripExperienceSharingProps> = ({
           );
         })}
       </div>
-
-      <style>{`
-        .trip-experiences-page {
-          padding: 2.5rem 1.25rem;
-        }
-
-        .reports-feed {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-          margin-top: 2rem;
-          max-width: 820px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-
-        @media (max-width: 640px) {
-          .trip-experiences-page {
-            padding: 1.5rem 0.85rem;
-          }
-        }
-      `}</style>
     </div>
   );
 };

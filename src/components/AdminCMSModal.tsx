@@ -331,39 +331,6 @@ export const AdminCMSModal: React.FC<AdminCMSModalProps> = ({
         )}
       </div>
 
-      <style>{`
-        .cms-modal {
-          max-width: 680px;
-          padding: 1.75rem;
-        }
-        .cms-header {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-bottom: 1.25rem;
-        }
-        .cms-tabs {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 1.5rem;
-          border-bottom: 1px solid var(--border-light);
-          padding-bottom: 0.75rem;
-        }
-        .modern-form {
-          display: flex;
-          flex-direction: column;
-        }
-        .form-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 0.75rem;
-          margin-top: 1rem;
-        }
-        .success-banner {
-          text-align: center;
-          padding: 2.5rem 1rem;
-        }
-      `}</style>
     </div>
   );
 };
