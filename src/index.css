@@ -107,10 +107,14 @@
   border-color: rgba(225, 29, 72, 0.3);
 }
 
-* {
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
@@ -120,6 +124,19 @@ body {
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+}
+
+/* App Root Sticky Footer Layout */
+.app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-main-content {
+  flex: 1 0 auto;
+  width: 100%;
 }
 
 /* Custom Scrollbar */
