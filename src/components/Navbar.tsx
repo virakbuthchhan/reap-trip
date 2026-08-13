@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth, DEMO_USERS } from '../context/AuthContext';
-import { ThemeToggle } from './ThemeToggle';
 import { AuthModal } from './AuthModal';
-import { Compass, Users, Calculator, Utensils, CheckSquare, MessageSquare, Plus, ShieldAlert, ChevronDown, ChevronUp, Menu, X, Tent, User as UserIcon, LogIn, LogOut, Sparkles } from 'lucide-react';
+import { Compass, Users, Calculator, Utensils, CheckSquare, MessageSquare, Plus, ShieldAlert, ChevronDown, Menu, X, Tent, User as UserIcon, LogIn, LogOut, Sun, Moon, Laptop, Globe } from 'lucide-react';
 
 interface NavbarProps {
   activeTab?: string;
@@ -24,11 +24,23 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const pathname = usePathname();
   const { language, setLanguage, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, authModalOpen, openAuthModal, closeAuthModal, logout, switchDemoUser } = useAuth();
 
-  // State to toggle Card Menu Bar & Profile Dropdown
-  const [menuBarOpen, setMenuBarOpen] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navItems = [
     {
@@ -81,16 +93,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   ];
 
-  const toggleMenuBar = () => {
-    setMenuBarOpen(!menuBarOpen);
-  };
-
   return (
-    <header className="sticky-header-wrapper">
-      {/* Top Header Row */}
-      <div className="top-navbar">
-        <div className="container top-navbar-container">
-          {/* Brand Logo links to Home Page */}
+    <header className="fb-navbar-wrapper">
+      <div className="fb-navbar-container">
+        {/* LEFT: Brand Logo & Title */}
+        <div className="fb-nav-left">
           <Link
             href="/"
             className="brand-logo interactive-logo-link"
@@ -106,25 +113,95 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="brand-sub-text">{t.brandSubtitle}</span>
             </div>
           </Link>
+        </div>
 
-          {/* Right Header Actions */}
-          <div className="top-nav-actions">
-            {/* User Profile Button / Auth Trigger */}
+        {/* CENTER: Facebook-Style Horizontal Navigation Tabs */}
+        <nav className="fb-nav-center desktop-only-flex">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (pathname === '/' && item.id === 'destinations');
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`fb-tab-item ${isActive ? 'active' : ''}`}
+                title={language === 'km' ? `${item.label} - ${item.descriptionKm}` : `${item.label} - ${item.descriptionEn}`}
+              >
+                <Icon size={20} className="fb-tab-icon" />
+                <span className="fb-tab-label">{item.label}</span>
+                <span className="fb-tab-tooltip">{item.label}</span>
+                {isActive && <div className="fb-tab-indicator" />}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* RIGHT: Quick Action Buttons, Theme, Language & User Profile */}
+        <div className="fb-nav-right">
+          {/* Share Experience Quick Action Button */}
+          {onOpenAddExperience && (
+            <button className="btn btn-primary btn-sm desktop-only-btn" onClick={onOpenAddExperience}>
+              <Plus size={16} />
+              <span>{t.btnShareExperience}</span>
+            </button>
+          )}
+
+          {/* Admin CMS Button */}
+          {onOpenAdminCMS && (
+            <button className="btn btn-secondary btn-sm desktop-only-btn" onClick={onOpenAdminCMS} title={t.btnAdminCMS}>
+              <ShieldAlert size={15} />
+            </button>
+          )}
+
+          {/* Theme Switcher Icon Toggle */}
+          <button
+            type="button"
+            className="icon-action-btn"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+
+          {/* Language Switcher Mini */}
+          <div className="lang-switch-mini" title="Switch Language / ផ្លាស់ប្តូរភាសា">
+            <button
+              className={`lang-mini-btn ${language === 'km' ? 'active' : ''}`}
+              onClick={() => setLanguage('km')}
+            >
+              ខ្មែរ
+            </button>
+            <button
+              className={`lang-mini-btn ${language === 'en' ? 'active' : ''}`}
+              onClick={() => setLanguage('en')}
+            >
+              EN
+            </button>
+          </div>
+
+          {/* User Profile & Account Dropdown */}
+          <div className="user-profile-dropdown-wrap" ref={dropdownRef}>
             {user ? (
-              <div className="user-profile-dropdown-wrap">
-                <button
-                  type="button"
-                  className="user-profile-nav-btn"
-                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                  title={user.name}
-                >
-                  <img src={user.avatar} alt={user.name} className="nav-user-avatar" />
-                  <span className="nav-user-name">{user.name.split(' ')[0]}</span>
-                  <ChevronDown size={13} className={`chevron-icon ${profileMenuOpen ? 'open' : ''}`} />
-                </button>
+              <button
+                type="button"
+                className="user-avatar-btn"
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                title={user.name}
+              >
+                <img src={user.avatar} alt={user.name} className="nav-user-avatar" />
+                <ChevronDown size={13} className={`chevron-icon ${profileMenuOpen ? 'open' : ''}`} />
+              </button>
+            ) : (
+              <button className="btn btn-primary btn-sm" onClick={openAuthModal}>
+                <LogIn size={15} />
+                <span>{language === 'km' ? 'ចូល' : 'Sign In'}</span>
+              </button>
+            )}
 
-                {profileMenuOpen && (
-                  <div className="profile-dropdown-menu" onClick={() => setProfileMenuOpen(false)}>
+            {profileMenuOpen && (
+              <div className="profile-dropdown-menu">
+                {user ? (
+                  <>
                     <div className="profile-menu-header">
                       <img src={user.avatar} alt={user.name} className="menu-header-avatar" />
                       <div>
@@ -135,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                     <div className="menu-divider" />
 
-                    <Link href="/profile" className="profile-menu-item">
+                    <Link href="/profile" className="profile-menu-item" onClick={() => setProfileMenuOpen(false)}>
                       <UserIcon size={16} />
                       <span>{language === 'km' ? 'ទំព័រគណនី (My Profile)' : 'My Dashboard'}</span>
                     </Link>
@@ -148,7 +225,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                         key={u.id}
                         type="button"
                         className={`profile-menu-item demo-switch-item ${user.id === u.id ? 'active' : ''}`}
-                        onClick={() => switchDemoUser(u.id)}
+                        onClick={() => {
+                          switchDemoUser(u.id);
+                          setProfileMenuOpen(false);
+                        }}
                       >
                         <img src={u.avatar} alt={u.name} className="mini-avatar" />
                         <span>{u.name.split(' ')[0]} ({u.role})</span>
@@ -157,80 +237,47 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                     <div className="menu-divider" />
 
-                    <button type="button" className="profile-menu-item logout-item" onClick={logout}>
+                    <button
+                      type="button"
+                      className="profile-menu-item logout-item"
+                      onClick={() => {
+                        logout();
+                        setProfileMenuOpen(false);
+                      }}
+                    >
                       <LogOut size={16} />
                       <span>{language === 'km' ? 'ចាកចេញ' : 'Sign Out'}</span>
                     </button>
+                  </>
+                ) : (
+                  <div className="profile-menu-header guest-menu-header">
+                    <Globe size={20} color="var(--primary)" />
+                    <div>
+                      <strong>{language === 'km' ? 'ការកំណត់' : 'Preferences'}</strong>
+                      <span className="menu-header-role">{language === 'km' ? 'ភ្ញៀវ' : 'Guest'}</span>
+                    </div>
                   </div>
                 )}
               </div>
-            ) : (
-              <button className="btn btn-primary btn-sm" onClick={openAuthModal}>
-                <LogIn size={15} />
-                <span>{language === 'km' ? 'ចូលប្រព័ន្ធ' : 'Sign In'}</span>
-              </button>
             )}
-
-            {/* Theme Switcher Toggle */}
-            <ThemeToggle />
-
-            {/* Language Switcher */}
-            <div className="lang-switch" title="Toggle Language / ផ្លាស់ប្តូរភាសា">
-              <button
-                className={`lang-btn ${language === 'km' ? 'active' : ''}`}
-                onClick={() => setLanguage('km')}
-              >
-                ខ្មែរ
-              </button>
-              <button
-                className={`lang-btn ${language === 'en' ? 'active' : ''}`}
-                onClick={() => setLanguage('en')}
-              >
-                EN
-              </button>
-            </div>
-
-            {/* Desktop Quick Action Buttons */}
-            {onOpenAddExperience && (
-              <button className="btn btn-primary btn-sm desktop-only-btn" onClick={onOpenAddExperience}>
-                <Plus size={16} />
-                <span>{t.btnShareExperience}</span>
-              </button>
-            )}
-
-            {onOpenAdminCMS && (
-              <button className="btn btn-secondary btn-sm desktop-only-btn" onClick={onOpenAdminCMS} title={t.btnAdminCMS}>
-                <ShieldAlert size={15} />
-                <span>CMS</span>
-              </button>
-            )}
-
-            {/* Desktop Menu Toggle Button */}
-            <button
-              className="desktop-menu-toggle-btn desktop-only-btn"
-              onClick={toggleMenuBar}
-              title={menuBarOpen ? 'Hide Menu' : 'Show Menu'}
-            >
-              {menuBarOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </button>
-
-            {/* Burger Menu Button on Mobile */}
-            <button
-              className="burger-menu-btn mobile-only-btn"
-              onClick={toggleMenuBar}
-              aria-label="Toggle Navigation Menu"
-              title="Toggle Menu"
-            >
-              {menuBarOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
           </div>
+
+          {/* Mobile Burger Menu Button */}
+          <button
+            className="burger-menu-btn mobile-only-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle Navigation Menu"
+            title="Toggle Menu"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
       </div>
 
-      {/* Toggleable Feature Card Menu Bar */}
-      <nav className={`feature-card-menu-bar ${menuBarOpen ? 'open' : 'closed'}`}>
-        <div className="container">
-          <div className="card-menu-grid">
+      {/* Mobile Navigation Drawer */}
+      {mobileMenuOpen && (
+        <div className="mobile-nav-drawer mobile-only-block">
+          <div className="mobile-nav-links">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || (pathname === '/' && item.id === 'destinations');
@@ -238,49 +285,33 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Link
                   key={item.id}
                   href={item.href}
-                  className={`menu-card-item ${isActive ? 'active' : ''}`}
-                  onClick={() => {
-                    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
-                      setMenuBarOpen(false);
-                    }
-                  }}
+                  className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  <div className="menu-card-icon-wrap">
-                    <Icon size={24} className="menu-card-icon" />
-                  </div>
-                  <div className="menu-card-text">
-                    <span className="menu-card-label">{item.label}</span>
-                    <span className="menu-card-sub">
-                      {language === 'km' ? item.descriptionKm : item.descriptionEn}
-                    </span>
-                  </div>
-                  {isActive && <div className="active-glow-indicator" />}
+                  <Icon size={20} />
+                  <span>{item.label}</span>
                 </Link>
               );
             })}
-          </div>
 
-          {/* Quick Actions inside mobile menu bar */}
-          <div className="mobile-menu-actions mobile-only-flex">
             {onOpenAddExperience && (
-              <button className="btn btn-primary btn-sm btn-full" onClick={() => { onOpenAddExperience(); setMenuBarOpen(false); }}>
+              <button
+                className="btn btn-primary btn-sm btn-full mt-2"
+                onClick={() => {
+                  onOpenAddExperience();
+                  setMobileMenuOpen(false);
+                }}
+              >
                 <Plus size={16} />
                 <span>{t.btnShareExperience}</span>
               </button>
             )}
-            {onOpenAdminCMS && (
-              <button className="btn btn-secondary btn-sm btn-full" onClick={() => { onOpenAdminCMS(); setMenuBarOpen(false); }}>
-                <ShieldAlert size={15} />
-                <span>{t.btnAdminCMS}</span>
-              </button>
-            )}
           </div>
         </div>
-      </nav>
+      )}
 
       {/* Authentication Modal */}
       <AuthModal isOpen={authModalOpen} onClose={closeAuthModal} />
-
     </header>
   );
 };
