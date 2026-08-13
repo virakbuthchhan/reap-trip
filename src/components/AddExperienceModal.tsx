@@ -8,7 +8,8 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { InputField } from './ui/InputField';
 import { TextAreaField } from './ui/TextAreaField';
 import { SelectField, SelectOption } from './ui/SelectField';
-import { X, Send, User, Compass, DollarSign, UploadCloud, Image as ImageIcon, Trash2, Plus, Maximize2, Minimize2 } from 'lucide-react';
+import { MediaUpload } from './ui/MediaUpload';
+import { X, Send, User, Compass, DollarSign, UploadCloud, Image as ImageIcon, Camera, Lightbulb, Trash2, Plus, Maximize2, Minimize2 } from 'lucide-react';
 
 interface AddExperienceModalProps {
   destinations: Destination[];
@@ -35,13 +36,11 @@ export const AddExperienceModal: React.FC<AddExperienceModalProps> = ({
   const [difficultyRating, setDifficultyRating] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [tipsForNewbies, setTipsForNewbies] = useState('');
   
-  // Attachments State (up to 5 images)
+  // Attachments State (up to 5 images/videos)
   const [photos, setPhotos] = useState<string[]>([
     'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80',
     'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80'
   ]);
-  const [urlInput, setUrlInput] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const destOptions: SelectOption[] = destinations.map((d) => ({
     value: d.id,
@@ -64,35 +63,6 @@ export const AddExperienceModal: React.FC<AddExperienceModalProps> = ({
     { value: '4', label: '4/5 - Tough Mountain Trek', icon: '⭐⭐⭐⭐' },
     { value: '5', label: '5/5 - Extreme Endurance', icon: '⭐⭐⭐⭐⭐' }
   ];
-
-  // Handle local file selection for static preview
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const selectedFiles = Array.from(e.target.files);
-    
-    // Convert to object URLs for preview
-    const newPreviews = selectedFiles.map((file) => URL.createObjectURL(file));
-    
-    // Combine up to max 5 photos
-    const updated = [...photos, ...newPreviews].slice(0, 5);
-    setPhotos(updated);
-  };
-
-  // Add photo via URL
-  const handleAddUrlPhoto = () => {
-    if (!urlInput.trim()) return;
-    if (photos.length >= 5) {
-      showToast(language === 'km' ? 'អាចបង្ហោះបានអតិបរមា ៥ រូបភាព' : 'Maximum 5 photos allowed', 'warning');
-      return;
-    }
-    setPhotos([...photos, urlInput.trim()].slice(0, 5));
-    setUrlInput('');
-  };
-
-  // Remove photo
-  const handleRemovePhoto = (index: number) => {
-    setPhotos(photos.filter((_, i) => i !== index));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,7 +101,10 @@ export const AddExperienceModal: React.FC<AddExperienceModalProps> = ({
         {/* Sticky Fixed Header */}
         <div className="modal-header-sticky">
           <div className="modal-header-title-wrap">
-            <h3>📸 {language === 'km' ? 'ចែករំលែកបទពិសោធន៍ដើរព្រៃ' : 'Share Your Trip Experience'}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Camera size={20} color="var(--primary)" />
+              <span>{language === 'km' ? 'ចែករំលែកបទពិសោធន៍ដើរព្រៃ' : 'Share Your Trip Experience'}</span>
+            </h3>
             <p className="text-muted">
               {language === 'km' ? 'ជួយអ្នកដើរព្រៃជំនាន់ក្រោយ ដោយចែករំលែកបច្ចុប្បន្នភាពផ្លូវ និងអនុសាសន៍ល្អៗ។' : 'Help newbies with real route updates, costs, and practical tips!'}
             </p>
@@ -218,91 +191,21 @@ export const AddExperienceModal: React.FC<AddExperienceModalProps> = ({
           </div>
 
           <TextAreaField
-            label={`💡 ${t.newbieTips}`}
+            label={t.newbieTips}
             rows={2}
             placeholder="e.g. Bring extra drinking water, register with guide Sokha first..."
             value={tipsForNewbies}
             onChange={(e) => setTipsForNewbies(e.target.value)}
           />
 
-          {/* Static Multi-Image Upload & Preview Section (Up to 5 images) */}
-          <div className="form-field-group full-width attachment-upload-section">
-            <div className="attachment-header-row">
-              <label className="form-field-label">
-                📷 {language === 'km' ? 'រូបភាពភ្ជាប់ (អតិបរមា ៥ រូប)' : 'Trip Photos Attachment'}
-              </label>
-              <span className={`photo-counter-badge ${photos.length >= 5 ? 'full' : ''}`}>
-                {photos.length}/5 {language === 'km' ? 'រូប' : 'photos'}
-              </span>
-            </div>
-
-            {/* Hidden native file input */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              multiple
-              style={{ display: 'none' }}
-              onChange={handleFileSelect}
-            />
-
-            {/* Drag & Drop Upload Zone */}
-            {photos.length < 5 && (
-              <div
-                className="dropzone-box"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <UploadCloud size={28} className="dropzone-icon" />
-                <div className="dropzone-text">
-                  <strong>{language === 'km' ? 'ចុចទីនេះដើម្បីជ្រើសរើសរូបភាព ឬទាញទម្លាក់' : 'Click to select or drag & drop trip photos'}</strong>
-                  <span>{language === 'km' ? 'គាំទ្រ JPG, PNG, WEBP (អតិបរមា ៥ រូបភាព)' : 'Supports JPG, PNG, WEBP (Up to 5 images)'}</span>
-                </div>
-              </div>
-            )}
-
-            {/* URL Input Fallback Option */}
-            {photos.length < 5 && (
-              <div className="url-photo-add-row" style={{ marginTop: '0.75rem' }}>
-                <InputField
-                  placeholder="Or paste photo image URL..."
-                  icon={<ImageIcon size={16} />}
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  fullWidth={true}
-                />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleAddUrlPhoto}
-                  disabled={!urlInput.trim()}
-                >
-                  <Plus size={16} />
-                  <span>{language === 'km' ? 'បន្ថែម' : 'Add'}</span>
-                </button>
-              </div>
-            )}
-
-            {/* Image Preview Grid */}
-            {photos.length > 0 && (
-              <div className="image-preview-grid">
-                {photos.map((src, index) => (
-                  <div key={index} className="preview-tile">
-                    <img src={src} alt={`Attachment ${index + 1}`} />
-                    <button
-                      type="button"
-                      className="remove-photo-btn"
-                      onClick={() => handleRemovePhoto(index)}
-                      title="Remove image"
-                    >
-                      <X size={14} />
-                    </button>
-                    <span className="tile-number-badge">#{index + 1}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
+          <MediaUpload
+            label={language === 'km' ? 'រូបភាព និងវីដេអូភ្ជាប់ (អតិបរមា ៥)' : 'Trip Media Attachments (Photos & Videos)'}
+            value={photos}
+            onChange={(val) => setPhotos(Array.isArray(val) ? val : [val])}
+            multiple={true}
+            maxFiles={5}
+            helperText={language === 'km' ? 'គាំទ្ររូបភាព JPG, PNG, WEBP និងវីដេអូ MP4 (អតិបរមា ៥)' : 'Supports photos JPG, PNG, WEBP and MP4 videos (Up to 5 files)'}
+          />
           </div>
 
           {/* Sticky Fixed Bottom Actions Bar */}

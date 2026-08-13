@@ -7,6 +7,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { InputField } from './ui/InputField';
 import { TextAreaField } from './ui/TextAreaField';
 import { SelectField } from './ui/SelectField';
+import { MediaUpload } from './ui/MediaUpload';
 import { X, Send, UserPlus, Phone, ShieldCheck, DollarSign, Image as ImageIcon, MapPin, Maximize2, Minimize2 } from 'lucide-react';
 
 interface AddGuideModalProps {
@@ -71,7 +72,10 @@ export const AddGuideModal: React.FC<AddGuideModalProps> = ({
         {/* Sticky Fixed Header */}
         <div className="modal-header-sticky">
           <div className="modal-header-title-wrap">
-            <h3>👤 {language === 'km' ? 'បន្ថែម/ណែនាំមគ្គុទ្ទេសក៍សហគមន៍' : 'Recommend a Local Guide'}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <UserPlus size={20} color="var(--primary)" />
+              <span>{language === 'km' ? 'បន្ថែម/ណែនាំមគ្គុទ្ទេសក៍សហគមន៍' : 'Recommend a Local Guide'}</span>
+            </h3>
             <p className="text-muted">
               {language === 'km' ? 'ជួយសម្រួលដល់អ្នកបោះជំរុំដោយចែករំលែកទំនាក់ទំនងមគ្គុទ្ទេសក៍ក្នុងតំបន់' : 'Help campers connect with verified local village guides and rangers!'}
             </p>
@@ -168,12 +172,14 @@ export const AddGuideModal: React.FC<AddGuideModalProps> = ({
               onChange={(e) => setBio(e.target.value)}
             />
 
-            <InputField
-              label="📷 Avatar Photo URL (Optional)"
-              placeholder="https://images.unsplash.com/..."
-              icon={<ImageIcon size={16} />}
+            <MediaUpload
+              label={language === 'km' ? 'រូបភាព/វីដេអូ អាវាតា' : 'Avatar Photo / Video'}
               value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
+              onChange={(val) => setAvatarUrl(typeof val === 'string' ? val : val[0] || '')}
+              multiple={false}
+              aspectRatio="avatar"
+              compact={true}
+              helperText={language === 'km' ? 'ជ្រើសរើសរូបភាព ឬវីដេអូខ្លីសម្រាប់អាវាតាប្រវត្តិរូប (ឬប្រើតំណភ្ជាប់)' : 'Upload photo or video avatar for local guide profile'}
             />
           </div>
 

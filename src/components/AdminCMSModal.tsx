@@ -7,6 +7,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { InputField } from './ui/InputField';
 import { TextAreaField } from './ui/TextAreaField';
 import { SelectField } from './ui/SelectField';
+import { MediaUpload } from './ui/MediaUpload';
 import { X, ShieldAlert, Check, MapPin, Compass, Image, DollarSign, Phone, Send, User } from 'lucide-react';
 
 interface AdminCMSModalProps {
@@ -221,12 +222,12 @@ export const AdminCMSModal: React.FC<AdminCMSModalProps> = ({
               />
             </div>
 
-            <InputField
-              label="Cover Image URL"
-              placeholder="https://images.unsplash.com/..."
-              icon={<Image size={17} />}
+            <MediaUpload
+              label="Destination Cover Photo / Video"
               value={coverImage}
-              onChange={(e) => setCoverImage(e.target.value)}
+              onChange={(val) => setCoverImage(typeof val === 'string' ? val : val[0] || '')}
+              multiple={false}
+              helperText="Upload destination cover photo or video banner"
             />
 
             <TextAreaField

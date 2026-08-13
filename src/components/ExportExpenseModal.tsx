@@ -309,7 +309,10 @@ export const ExportExpenseModal: React.FC<ExportExpenseModalProps> = ({
         {/* Sticky Fixed Header */}
         <div className="modal-header-sticky">
           <div className="modal-header-title-wrap">
-            <h3>⚖️ {language === 'km' ? 'នាំចេញ / ទាញយកកំណត់ត្រាចំណាយ' : 'Export & Save Expense Report'}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Scale size={20} color="var(--primary)" />
+              <span>{language === 'km' ? 'នាំចេញ / ទាញយកកំណត់ត្រាចំណាយ' : 'Export & Save Expense Report'}</span>
+            </h3>
             <p className="text-muted small-text">
               {language === 'km' ? 'រក្សាទុកជារូបភាព (PNG), ឯកសារអត្ថបទ ឬបោះពុម្ព' : 'Download receipt image, summary file, or copy text'}
             </p>

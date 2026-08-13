@@ -10,6 +10,7 @@ import { Phone, Send, ShieldCheck, Star, MapPin, Search, MessageSquare, Check, U
 import { InputField } from './ui/InputField';
 import { TextAreaField } from './ui/TextAreaField';
 import { SelectField } from './ui/SelectField';
+import { GuideCard } from './ui/GuideCard';
 
 interface GuideDirectoryProps {
   guides: LocalGuide[];
@@ -153,109 +154,16 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
 
       {/* Guide Cards Container */}
       <div className={viewMode === 'grid' ? 'guides-grid' : 'guides-list-view'}>
-        {filteredGuides.map((guide) => {
-          const name = language === 'km' ? guide.nameKm : guide.nameEn;
-          const village = language === 'km' ? guide.communityVillageKm : guide.communityVillageEn;
-          const bio = language === 'km' ? guide.bioKm : guide.bioEn;
-          const price = language === 'km' ? guide.priceRangeKm : guide.priceRangeEn;
-          const isEndorsed = endorsedMap[guide.id] || false;
-
-          return (
-            <div
-              key={guide.id}
-              className={`guide-card rounded-guide-card glass-card ${viewMode === 'list' ? 'clean-list-guide-card' : ''}`}
-            >
-              {/* Column 1: Guide Avatar & Identity */}
-              <div className="guide-identity-col">
-                <div className="avatar-wrap">
-                  <img src={guide.avatar} alt={name} className="guide-avatar-img" />
-                </div>
-                <div className="guide-identity-info">
-                  <div className="guide-title-badge-row">
-                    <h3>{name}</h3>
-                    {guide.verified && (
-                      <span className="badge badge-emerald inline-verified-badge" title="Verified by Community">
-                        <ShieldCheck size={11} /> {language === 'km' ? 'បានបញ្ជាក់' : 'Verified'}
-                      </span>
-                    )}
-                  </div>
-                  <span className="village-tag">📍 {village}</span>
-                  <div className="rating-row">
-                    <Star size={14} color="var(--accent-amber)" fill="var(--accent-amber)" />
-                    <strong>{guide.rating}</strong>
-                    <span>({guide.reviewCount} {language === 'km' ? 'ការគាំទ្រ' : 'endorsements'})</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Column 2: Bio & Metadata Pills */}
-              <div className="guide-details-col">
-                <p className="guide-bio-text">{bio}</p>
-
-                <div className="guide-meta-pill-box">
-                  <div className="meta-pill">
-                    <span className="meta-label">
-                      <DollarSign size={14} color="var(--primary)" /> {language === 'km' ? 'តម្លៃ:' : 'Rate:'}
-                    </span>
-                    <strong className="meta-val">{price}</strong>
-                  </div>
-
-                  <div className="meta-pill">
-                    <span className="meta-label">
-                      <Globe size={14} color="var(--primary)" /> {language === 'km' ? 'ភាសា:' : 'Languages:'}
-                    </span>
-                    <div className="lang-chips">
-                      {guide.languages.map((lang: string, idx: number) => (
-                        <span key={idx} className="badge badge-cyan">{lang}</span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Column 3: Contact & Action Buttons */}
-              <div className="guide-actions-col">
-                <a
-                  href={`tel:${guide.phone.replace(/\s+/g, '')}`}
-                  className="btn btn-primary btn-sm call-btn-full"
-                >
-                  <Phone size={15} />
-                  <span>{guide.phone}</span>
-                </a>
-
-                <div className="sub-actions-row">
-                  {guide.telegramHandle && (
-                    <a
-                      href={`https://t.me/${guide.telegramHandle.replace('@', '')}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-secondary btn-sm flex-1"
-                    >
-                      <Send size={14} />
-                      <span>Telegram</span>
-                    </a>
-                  )}
-
-                  <button
-                    className="btn btn-outline btn-sm icon-action-btn"
-                    onClick={() => setInquiryGuide(guide)}
-                    title="Send Message"
-                  >
-                    <MessageSquare size={15} />
-                  </button>
-
-                  <button
-                    className={`btn btn-sm icon-action-btn ${isEndorsed ? 'btn-secondary' : 'btn-outline'}`}
-                    onClick={() => handleEndorseGuide(guide)}
-                    title="Verify Guide (+1)"
-                  >
-                    <ThumbsUp size={14} color={isEndorsed ? 'var(--primary)' : 'currentColor'} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {filteredGuides.map((guide) => (
+          <GuideCard
+            key={guide.id}
+            guide={guide}
+            viewMode={viewMode}
+            isEndorsed={endorsedMap[guide.id] || false}
+            onEndorse={handleEndorseGuide}
+            onInquiry={setInquiryGuide}
+          />
+        ))}
       </div>
 
       {/* Add Guide Modal */}
@@ -274,7 +182,10 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
             {/* Sticky Fixed Header */}
             <div className="modal-header-sticky">
               <div className="modal-header-title-wrap">
-                <h3>💬 {language === 'km' ? 'ផ្ញើសារទៅកាន់' : 'Send Message to'} {language === 'km' ? inquiryGuide.nameKm : inquiryGuide.nameEn}</h3>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MessageSquare size={20} color="var(--primary)" />
+                  <span>{language === 'km' ? 'ផ្ញើសារទៅកាន់' : 'Send Message to'} {language === 'km' ? inquiryGuide.nameKm : inquiryGuide.nameEn}</span>
+                </h3>
               </div>
               <div className="modal-header-actions">
                 <button type="button" className="modal-icon-btn close-btn" onClick={() => setInquiryGuide(null)}>

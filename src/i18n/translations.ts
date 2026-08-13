@@ -6,7 +6,7 @@ export const translations = {
     heroTitle: "Explore Cambodia's Hidden Peaks, Waterfalls & Campsites",
     heroSub: "Practical route details, local guide contacts, group expense splitters, and camp meal planners built specifically for beginners and adventure lovers.",
     searchPlaceholder: "Search by destination name, province (e.g. Kampong Speu, Koh Kong)...",
-    
+
     // Nav Tabs
     navDestinations: "Destinations",
     navGuides: "Local Guides",
@@ -135,8 +135,8 @@ export const translations = {
     navMeals: "រៀបចំម្ហូប & ផ្សារ",
     navChecklist: "បញ្ជីសម្ភារៈ",
     navExperiences: "បទពិសោធន៍ដើរព្រៃ",
-    btnShareExperience: "+ ចែករំលែកបទពិសោធន៍",
-    btnPlanTrip: "+ បង្កើតគម្រោងថ្មី",
+    btnShareExperience: "ចែករំលែកបទពិសោធន៍",
+    btnPlanTrip: "បង្កើតគម្រោងថ្មី",
     btnAdminCMS: "គ្រប់គ្រងទិន្នន័យ (CMS)",
 
     // Destination Filters

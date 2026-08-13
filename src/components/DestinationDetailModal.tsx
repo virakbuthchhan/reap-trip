@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import {
-  X, MapPin, Navigation, Bike, Car, ShieldAlert, Compass, Flame,
+  X, MapPin, Navigation, Bike, Car, ShieldAlert, Compass, Flame, BookOpen, Users, Camera,
   Clock, Award, Phone, Send, CheckCircle2, AlertTriangle, Droplets, Fuel, Utensils, MessageSquare, ThumbsUp, Calendar, Maximize2, Minimize2
 } from 'lucide-react';
 
@@ -65,7 +65,10 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
         {/* Sticky Fixed Header */}
         <div className="modal-header-sticky">
           <div className="modal-header-title-wrap">
-            <h3>📍 {name}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <MapPin size={20} color="var(--primary)" />
+              <span>{name}</span>
+            </h3>
             <p className="text-muted">📍 {province} • {destination.distanceFromPhnomPenhKm} km from Phnom Penh</p>
           </div>
 
@@ -152,7 +155,10 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 
           {/* Section 1: Overview & How to Get There */}
           <div className="detail-section">
-            <h3>📖 {language === 'km' ? 'ព័ត៌មានទូទៅ & របៀបធ្វើដំណើរ' : 'Overview & How to Get There'}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <BookOpen size={20} color="var(--primary)" />
+              <span>{language === 'km' ? 'ព័ត៌មានទូទៅ & របៀបធ្វើដំណើរ' : 'Overview & How to Get There'}</span>
+            </h3>
             <p className="description-p">{description}</p>
 
             <div className="route-box">
@@ -173,7 +179,10 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 
           {/* Section 2: Camping Regulations & Fire Safety */}
           <div className="detail-section">
-            <h3>🔥 {language === 'km' ? 'ច្បាប់បោះជំរុំ & សុវត្ថិភាព' : 'Camping Rules & Regulations'}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Flame size={20} color="var(--accent-red)" />
+              <span>{language === 'km' ? 'ច្បាប់បោះជំរុំ & សុវត្ថិភាព' : 'Camping Rules & Regulations'}</span>
+            </h3>
             <div className="rules-list">
               <div className="rule-item">
                 <ShieldAlert size={18} color="var(--accent-amber)" />
@@ -194,7 +203,10 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 
           {/* Section 3: Nearby Services */}
           <div className="detail-section">
-            <h3>⛽ {t.nearbyServices}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Fuel size={20} color="var(--primary)" />
+              <span>{t.nearbyServices}</span>
+            </h3>
             <div className="services-grid">
               <div className="service-chip">
                 <Fuel size={16} />
@@ -217,7 +229,10 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
 
           {/* Section 4: Local Guides Contacts */}
           <div className="detail-section">
-            <h3>👥 {language === 'km' ? 'មគ្គុទ្ទេសក៍សហគមន៍សម្រាប់ទីតាំងនេះ' : 'Local Community Contacts & Guides'}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Users size={20} color="var(--primary)" />
+              <span>{language === 'km' ? 'មគ្គុទ្ទេសក៍សហគមន៍សម្រាប់ទីតាំងនេះ' : 'Local Community Contacts & Guides'}</span>
+            </h3>
             {destGuides.length > 0 ? (
               <div className="modal-guides-list">
                 {destGuides.map((guide) => (
@@ -252,7 +267,10 @@ export const DestinationDetailModal: React.FC<DestinationDetailModalProps> = ({
           {/* Section 5: Real Traveler Reports & Feedback */}
           <div className="detail-section">
             <div className="reports-header">
-              <h3>📸 {language === 'km' ? 'បទពិសោធន៍ពិតពីអ្នកដើរព្រៃ' : 'Real Trip Reports & Route Updates'}</h3>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Camera size={20} color="var(--primary)" />
+                <span>{language === 'km' ? 'បទពិសោធន៍ពិតពីអ្នកដើរព្រៃ' : 'Real Trip Reports & Route Updates'}</span>
+              </h3>
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() => {

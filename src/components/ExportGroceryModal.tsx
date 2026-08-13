@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import { X, Printer, Copy, Check, Download, Tent, FileText, Image as ImageIcon, Maximize2, Minimize2 } from 'lucide-react';
+import { X, Printer, Copy, Check, Download, Tent, FileText, Image as ImageIcon, ShoppingCart, Maximize2, Minimize2 } from 'lucide-react';
 
 interface ExportGroceryModalProps {
   groceryList: { name: string; amount: number; unit: string; category: string; estCost: number }[];
@@ -238,7 +238,10 @@ export const ExportGroceryModal: React.FC<ExportGroceryModalProps> = ({
         {/* Sticky Fixed Header */}
         <div className="modal-header-sticky">
           <div className="modal-header-title-wrap">
-            <h3>🛒 {language === 'km' ? 'នាំចេញ / ទាញយកបញ្ជីផ្សារ' : 'Export & Save Grocery Receipt'}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ShoppingCart size={20} color="var(--primary)" />
+              <span>{language === 'km' ? 'នាំចេញ / ទាញយកបញ្ជីផ្សារ' : 'Export & Save Grocery Receipt'}</span>
+            </h3>
             <p className="text-muted small-text">
               {language === 'km' ? 'រក្សាទុកជារូបភាព (PNG), ឯកសារអត្ថបទ ឬបោះពុម្ព' : 'Download receipt image, checklist file, or copy text'}
             </p>

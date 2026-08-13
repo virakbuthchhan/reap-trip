@@ -7,7 +7,8 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { InputField } from './ui/InputField';
 import { TextAreaField } from './ui/TextAreaField';
 import { SelectField, SelectOption } from './ui/SelectField';
-import { X, Send, ChefHat, Clock, Image as ImageIcon, Plus, Trash2, Maximize2, Minimize2 } from 'lucide-react';
+import { MediaUpload } from './ui/MediaUpload';
+import { X, Send, ChefHat, Utensils, Clock, Image as ImageIcon, Plus, Trash2, Maximize2, Minimize2 } from 'lucide-react';
 
 interface AddRecipeModalProps {
   onClose: () => void;
@@ -99,7 +100,10 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
         {/* Sticky Fixed Header */}
         <div className="modal-header-sticky">
           <div className="modal-header-title-wrap">
-            <h3>🥘 {language === 'km' ? 'ចែករំលែករូបមន្តម្ហូបបោះជំរុំ' : 'Share Your Camp Recipe'}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ChefHat size={20} color="var(--primary)" />
+              <span>{language === 'km' ? 'ចែករំលែករូបមន្តម្ហូបបោះជំរុំ' : 'Share Your Camp Recipe'}</span>
+            </h3>
             <p className="text-muted">
               {language === 'km' ? 'ចែករំលែកមុខម្ហូបឆ្ងាញ់ៗ និងងាយស្រួលធ្វើសម្រាប់អ្នកបោះជំរុំជំនាន់ក្រោយ!' : 'Post your favorite camp recipe and scaled ingredients!'}
             </p>
@@ -167,7 +171,10 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
             {/* Dynamic Ingredients Section */}
             <div className="form-field-group full-width">
               <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
-                <label className="form-field-label">🥬 {language === 'km' ? 'គ្រឿងផ្សំ (គិតម្នាក់)' : 'Ingredients (Per Person)'}</label>
+                <label className="form-field-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Utensils size={15} color="var(--primary)" />
+                  <span>{language === 'km' ? 'គ្រឿងផ្សំ (គិតម្នាក់)' : 'Ingredients (Per Person)'}</span>
+                </label>
                 <button type="button" className="btn btn-secondary btn-sm" onClick={handleAddIngredientRow}>
                   <Plus size={14} /> {language === 'km' ? 'បន្ថែមគ្រឿងផ្សំ' : 'Add Ingredient'}
                 </button>
@@ -229,12 +236,12 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
               onChange={(e) => setStepsText(e.target.value)}
             />
 
-            <InputField
-              label="📷 Recipe Cover Image URL"
-              placeholder="https://images.unsplash.com/..."
-              icon={<ImageIcon size={16} />}
+            <MediaUpload
+              label={language === 'km' ? 'រូបភាព/វីដេអូ គម្របមុខម្ហូប' : 'Recipe Cover Photo / Video'}
               value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
+              onChange={(val) => setImageUrl(typeof val === 'string' ? val : val[0] || '')}
+              multiple={false}
+              helperText={language === 'km' ? 'ជ្រើសរើសរូបភាព ឬវីដេអូបង្ហាញពីមុខម្ហូប' : 'Upload image or video preview of the recipe'}
             />
           </div>
 

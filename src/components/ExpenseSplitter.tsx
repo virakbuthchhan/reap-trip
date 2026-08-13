@@ -383,7 +383,10 @@ export const ExpenseSplitter: React.FC = () => {
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', padding: '1.5rem' }}>
-            <h3>➕ {t.addExpense}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Plus size={20} color="var(--primary)" />
+              <span>{t.addExpense}</span>
+            </h3>
 
             <form onSubmit={handleAddExpense} className="modern-form">
               <InputField

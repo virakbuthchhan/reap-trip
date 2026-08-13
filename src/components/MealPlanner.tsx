@@ -239,7 +239,10 @@ export const MealPlanner: React.FC<MealPlannerProps> = ({ recipes, onAddRecipe }
         <div className="grocery-section glass-card rounded-recipe-card">
           <div className="grocery-header flex-between">
             <div>
-              <h3>🛒 {language === 'km' ? 'បញ្ជីទិញទំនិញនៅផ្សារ' : 'Market Grocery List'} ({groupSize} {language === 'km' ? 'នាក់' : 'people'})</h3>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ShoppingBag size={20} color="var(--primary)" />
+                <span>{language === 'km' ? 'បញ្ជីទិញទំនិញនៅផ្សារ' : 'Market Grocery List'} ({groupSize} {language === 'km' ? 'នាក់' : 'people'})</span>
+              </h3>
               <p className="text-muted small-text">Auto-scaled for Phsar Orussey / Kampong Speu market shopping</p>
             </div>
 

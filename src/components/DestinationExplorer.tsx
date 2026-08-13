@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Destination } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { MapViewWrapper } from './MapViewWrapper';
+import { DestinationCard } from './ui/DestinationCard';
 import { Search, Map, Grid, Clock, MapPin, Mountain, Waves, Trees, Tent, Compass, Bike, Car, Truck, Footprints, Anchor, Sparkles, CheckCircle2 } from 'lucide-react';
 
 interface DestinationExplorerProps {
@@ -142,52 +143,9 @@ export const DestinationExplorer: React.FC<DestinationExplorerProps> = ({
           </div>
         ) : (
           <div className="destinations-grid">
-            {filtered.map((dest) => {
-              const name = language === 'km' ? dest.nameKm : dest.nameEn;
-              const province = language === 'km' ? dest.provinceKm : dest.provinceEn;
-
-              return (
-                <Link key={dest.id} href={`/destinations/${dest.id}`} className="dest-card-link">
-                  <div className="dest-card">
-                    <div className="dest-card-image-wrap">
-                      <img src={dest.coverImage} alt={name} loading="lazy" />
-                      <span className="badge badge-emerald dest-cat-badge">{dest.category}</span>
-                      <div className="dest-card-overlay">
-                        <span className="badge badge-amber" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <MapPin size={12} /> {province}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="dest-card-content">
-                      <h3>{name}</h3>
-                      <div className="dest-card-meta">
-                        <span><MapPin size={14} /> {dest.distanceFromPhnomPenhKm} {t.km} {language === 'km' ? 'ពីភ្នំពេញ' : 'from PP'}</span>
-                        <span><Clock size={14} /> ~{dest.estimatedTravelTimeHours} {t.hours}</span>
-                      </div>
-
-                      <div className="dest-card-badges">
-                        {dest.allowedTransport.map((tr, i) => (
-                          <span key={i} className="badge badge-emerald" style={{ fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            {tr === 'motorbike' ? <Bike size={12} /> : tr === 'suv_4x4' ? <Truck size={12} /> : tr === 'sedan_car' ? <Car size={12} /> : <Footprints size={12} />}
-                            <span>{tr}</span>
-                          </span>
-                        ))}
-                        {dest.campingRules.allowed && (
-                          <span className="badge badge-amber" style={{ fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Tent size={12} /> Camping
-                          </span>
-                        )}
-                      </div>
-
-                      <button className="btn btn-outline btn-sm dest-view-btn">
-                        {t.viewDetails} →
-                      </button>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+            {filtered.map((dest) => (
+              <DestinationCard key={dest.id} destination={dest} />
+            ))}
           </div>
         )}
       </div>
