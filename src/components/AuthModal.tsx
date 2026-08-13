@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { InputField } from './ui/InputField';
 import { TextAreaField } from './ui/TextAreaField';
-import { X, LogIn, UserPlus, ShieldCheck, Compass, Users, Tent, Home, Check, Sparkles } from 'lucide-react';
+import { X, LogIn, UserPlus, Compass, Users, Tent, Home, Check, Sparkles, Lock } from 'lucide-react';
 import { UserRole } from '../types';
 
 interface AuthModalProps {
@@ -25,10 +25,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   // Login form
   const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('password123');
 
   // Register form
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('password123');
   const [regRole, setRegRole] = useState<UserRole>('traveller');
   const [regPhone, setRegPhone] = useState('');
   const [regTelegram, setRegTelegram] = useState('');
@@ -37,36 +39,49 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginEmail) {
-      showToast(language === 'km' ? 'សូមបញ្ចូលអ៊ីមែល!' : 'Please enter your email!', 'error');
+    if (!loginEmail || !loginPassword) {
+      showToast(language === 'km' ? 'សូមបញ្ចូលអ៊ីមែល និងពាក្យសម្ងាត់!' : 'Please enter your email and password!', 'error');
       return;
     }
-    login(loginEmail);
-    showToast(language === 'km' ? 'ចូលប្រព័ន្ធជោគជ័យ!' : 'Signed in successfully!', 'success');
-    onClose();
+
+    const success = await login(loginEmail, loginPassword);
+    if (success) {
+      showToast(language === 'km' ? 'ចូលប្រព័ន្ធជោគជ័យ!' : 'Signed in successfully!', 'success');
+      onClose();
+    } else {
+      showToast(language === 'km' ? 'អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ!' : 'Invalid email or password!', 'error');
+    }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regName || !regEmail) {
-      showToast(language === 'km' ? 'សូមបំពេញឈ្មោះ និងអ៊ីមែល!' : 'Please enter your name and email!', 'error');
+    if (!regName || !regEmail || !regPassword) {
+      showToast(language === 'km' ? 'សូមបំពេញឈ្មោះ អ៊ីមែល និងពាក្យសម្ងាត់!' : 'Please enter your name, email and password!', 'error');
       return;
     }
 
-    register({
+    if (regPassword.length < 6) {
+      showToast(language === 'km' ? 'ពាក្យសម្ងាត់យ៉ាងហោចណាស់ ៦តួអក្សរ!' : 'Password must be at least 6 characters!', 'error');
+      return;
+    }
+
+    const success = await register({
       name: regName,
       email: regEmail,
+      password: regPassword,
       role: regRole,
       phone: regPhone,
       telegram: regTelegram,
       province: regProvince,
-      bio: regBio
+      bio: regBio,
     });
 
-    showToast(language === 'km' ? 'បង្កើតគណនីជោគជ័យ!' : 'Account registered successfully!', 'success');
-    onClose();
+    if (success) {
+      showToast(language === 'km' ? 'បង្កើតគណនីជោគជ័យ!' : 'Account registered successfully!', 'success');
+      onClose();
+    }
   };
 
   const rolesList: { role: UserRole; titleEn: string; titleKm: string; descEn: string; descKm: string; icon: any }[] = [
@@ -76,7 +91,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       titleKm: 'អ្នកដើរព្រៃ/អ្នកទេសចរ',
       descEn: 'Explore spots, save campsites & plan meals',
       descKm: 'ស្វែងរកទីតាំង បោះជំរុំ និងរៀបចំម្ហូប',
-      icon: Compass
+      icon: Compass,
     },
     {
       role: 'tour_leader',
@@ -84,7 +99,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       titleKm: 'ប្រធានក្រុម/អ្នករៀបចំ',
       descEn: 'Organize group trips & split trip expenses',
       descKm: 'រៀបចំដំណើរកម្សាន្ត និងចែករំលែកការចំណាយ',
-      icon: Users
+      icon: Users,
     },
     {
       role: 'local_guide',
@@ -92,7 +107,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       titleKm: 'អ្នកនាំផ្លូវសហគមន៍',
       descEn: 'Offer trail guiding & community support',
       descKm: 'ផ្តល់សេវានាំផ្លូវព្រៃ និងព័ត៌មានសហគមន៍',
-      icon: Tent
+      icon: Tent,
     },
     {
       role: 'homestay_provider',
@@ -100,8 +115,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       titleKm: 'អ្នកផ្ទះសំណាក់/មធ្យោបាយ',
       descEn: 'Provide local stays & moto/boat transfers',
       descKm: 'ផ្តល់ផ្ទះសំណាក់សហគមន៍ និងការធ្វើដំណើរ',
-      icon: Home
-    }
+      icon: Home,
+    },
   ];
 
   return (
@@ -128,7 +143,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           {/* Quick Demo Account Switcher */}
           <div className="demo-accounts-box">
             <span className="demo-box-label">
-              ⚡ {language === 'km' ? 'ចុចចូលប្រព័ន្ធលឿន (គណនីគំរូ):' : 'Instant One-Click Demo Switcher:'}
+              ⚡ {language === 'km' ? 'ចុចចូលប្រព័ន្ធលឿន (គណនីគំរូ):' : 'Instant One-Click Demo Switcher (Password: password123):'}
             </span>
             <div className="demo-user-pills">
               {DEMO_USERS.map((u) => (
@@ -177,22 +192,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <InputField
                 label={language === 'km' ? 'អាសយដ្ឋានអ៊ីមែល' : 'Email Address'}
                 type="email"
-                placeholder="your.email@example.com"
+                placeholder="bopha.chan@reaptrip.com"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 required
               />
-              <div className="form-field-group">
-                <label className="form-field-label">
-                  {language === 'km' ? 'ពាក្យសម្ងាត់' : 'Password'}
-                </label>
-                <input
-                  type="password"
-                  className="custom-modern-input"
-                  placeholder="••••••••"
-                  defaultValue="demo123"
-                />
-              </div>
+              <InputField
+                label={language === 'km' ? 'ពាក្យសម្ងាត់ (Password)' : 'Password'}
+                type="password"
+                placeholder="••••••••"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required
+              />
               <button type="submit" className="btn btn-primary btn-full mt-3">
                 <LogIn size={18} />
                 <span>{language === 'km' ? 'ចូលប្រព័ន្ធ' : 'Sign In Now'}</span>
@@ -245,6 +257,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   required
                 />
               </div>
+
+              <InputField
+                label={language === 'km' ? 'ពាក្យសម្ងាត់ (Password - យ៉ាងហោចណាស់ ៦តួអក្សរ)' : 'Password (min 6 characters)'}
+                type="password"
+                placeholder="••••••••"
+                value={regPassword}
+                onChange={(e) => setRegPassword(e.target.value)}
+                required
+              />
 
               <div className="form-grid-2">
                 <InputField

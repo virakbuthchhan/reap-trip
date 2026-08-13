@@ -1,28 +1,35 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { Destination } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { MapViewWrapper } from './MapViewWrapper';
 import { DestinationCard } from './ui/DestinationCard';
-import { Search, Map, Grid, Clock, MapPin, Mountain, Waves, Trees, Tent, Compass, Bike, Car, Truck, Footprints, Anchor, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Search, Map, Grid, Mountain, Waves, Trees, Tent, Compass, Anchor, Sparkles } from 'lucide-react';
+import { useFilterStore } from '@/store/useFilterStore';
+import { useDestinationsQuery } from '@/hooks/useApi';
 
 interface DestinationExplorerProps {
-  destinations: Destination[];
+  destinations?: Destination[];
   onSelectDestination?: (dest: Destination) => void;
 }
 
 export const DestinationExplorer: React.FC<DestinationExplorerProps> = ({
-  destinations,
+  destinations: propDestinations,
   onSelectDestination
 }) => {
   const { language, t } = useLanguage();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const { searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, viewMode, setViewMode } = useFilterStore();
   const [selectedMapDest, setSelectedMapDest] = useState<Destination | null>(null);
+
+  // React Query API Fetching
+  const { data: apiDestinations, isLoading } = useDestinationsQuery({
+    category: selectedCategory,
+    search: searchQuery,
+  });
+
+  const destinations = propDestinations || apiDestinations || [];
 
   // Categories with Lucide Icons
   const categories = [
@@ -102,7 +109,7 @@ export const DestinationExplorer: React.FC<DestinationExplorerProps> = ({
                 <button
                   key={cat.id}
                   className={`cat-chip ${selectedCategory === cat.id ? 'active' : ''}`}
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => setSelectedCategory(cat.id as any)}
                 >
                   <Icon size={15} style={{ marginRight: '6px' }} />
                   <span>{cat.label}</span>
@@ -130,7 +137,11 @@ export const DestinationExplorer: React.FC<DestinationExplorerProps> = ({
         </div>
 
         {/* View Mode Switcher Rendering */}
-        {viewMode === 'map' ? (
+        {isLoading && destinations.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)' }}>
+            {language === 'km' ? 'កំពុងទាញយកទិន្នន័យ...' : 'Loading destinations from database...'}
+          </div>
+        ) : viewMode === 'map' ? (
           <div style={{ marginTop: '1.5rem' }}>
             <MapViewWrapper
               destinations={filtered}

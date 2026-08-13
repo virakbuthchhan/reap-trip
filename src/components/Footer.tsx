@@ -3,7 +3,24 @@
 import React from 'react';
 import Link from 'next/link';
 import { useLanguage } from '../context/LanguageContext';
-import { Tent, Heart, Compass, Users, Calculator, Utensils, CheckSquare, MessageSquare, Send, ShieldCheck, PhoneCall } from 'lucide-react';
+import {
+  Tent,
+  Heart,
+  Compass,
+  Users,
+  Calculator,
+  Utensils,
+  CheckSquare,
+  MessageSquare,
+  Send,
+  ShieldCheck,
+  PhoneCall,
+  FileText,
+  Leaf,
+  HeartHandshake,
+  Flag,
+  MapPin,
+} from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const { language, t } = useLanguage();
@@ -44,11 +61,36 @@ export const Footer: React.FC = () => {
               <span>{t.navDestinations}</span>
             </h4>
             <ul className="footer-links-list">
-              <li><Link href="/destinations">ខ្នងផ្សារ (Khnong Phsar)</Link></li>
-              <li><Link href="/destinations">គិរីរម្យ (Kirirom Park)</Link></li>
-              <li><Link href="/destinations">ជីផាត (Chi Phat Eco)</Link></li>
-              <li><Link href="/destinations">ភ្នំឱរ៉ាល់ (Phnom Aural)</Link></li>
-              <li><Link href="/destinations">ទឹកជ្រោះតាតៃ (Tatai Waterfall)</Link></li>
+              <li>
+                <Link href="/destinations" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MapPin size={15} color="var(--primary)" />
+                  <span>ខ្នងផ្សារ (Khnong Phsar)</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/destinations" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MapPin size={15} color="var(--primary)" />
+                  <span>គិរីរម្យ (Kirirom Park)</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/destinations" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MapPin size={15} color="var(--primary)" />
+                  <span>ជីផាត (Chi Phat Eco)</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/destinations" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MapPin size={15} color="var(--primary)" />
+                  <span>ភ្នំឱរ៉ាល់ (Phnom Aural)</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/destinations" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MapPin size={15} color="var(--primary)" />
+                  <span>ទឹកជ្រោះតាតៃ (Tatai Waterfall)</span>
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -59,11 +101,42 @@ export const Footer: React.FC = () => {
               <span>{language === 'km' ? 'ឧបករណ៍រៀបចំ' : 'Trip Tools'}</span>
             </h4>
             <ul className="footer-links-list">
-              <li><Link href="/expenses">🧮 {t.expensesHeader}</Link></li>
-              <li><Link href="/meals">🍲 {t.mealsHeader}</Link></li>
-              <li><Link href="/checklist">📋 {t.checklistHeader}</Link></li>
-              <li><Link href="/experiences">💬 {t.experiencesHeader}</Link></li>
-              <li><Link href="/guides">👥 {t.localGuidesHeader}</Link></li>
+              <li>
+                <Link href="/expenses" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Calculator size={15} color="var(--primary)" />
+                  <span>{t.expensesHeader}</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/meals" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Utensils size={15} color="var(--primary)" />
+                  <span>{t.mealsHeader}</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/checklist" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckSquare size={15} color="var(--primary)" />
+                  <span>{t.checklistHeader}</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/experiences" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MessageSquare size={15} color="var(--primary)" />
+                  <span>{t.experiencesHeader}</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/guides" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Users size={15} color="var(--primary)" />
+                  <span>{t.localGuidesHeader}</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/api-doc" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <FileText size={15} color="var(--primary)" />
+                  <span>API Documentation (Swagger)</span>
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -74,10 +147,30 @@ export const Footer: React.FC = () => {
               <span>{language === 'km' ? 'សុវត្ថិភាព & សហគមន៍' : 'Safety & Community'}</span>
             </h4>
             <ul className="footer-links-list">
-              <li><span>🌱 Leave No Trace (រក្សាធម្មជាតិ)</span></li>
-              <li><span>📞 ទំនាក់ទំនងអាសន្ន: 097 882 1234</span></li>
-              <li><span>🤝 គាំទ្រមគ្គុទ្ទេសក៍មូលដ្ឋាន</span></li>
-              <li><span>🇰🇭 បង្កើតឡើងដោយកូនខ្មែរ</span></li>
+              <li>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Leaf size={15} color="#10b981" />
+                  <span>Leave No Trace (រក្សាធម្មជាតិ)</span>
+                </span>
+              </li>
+              <li>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <PhoneCall size={15} color="#0284c7" />
+                  <span>ទំនាក់ទំនងអាសន្ន: 097 882 1234</span>
+                </span>
+              </li>
+              <li>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <HeartHandshake size={15} color="#f59e0b" />
+                  <span>គាំទ្រមគ្គុទ្ទេសក៍មូលដ្ឋាន</span>
+                </span>
+              </li>
+              <li>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Flag size={15} color="#ef4444" />
+                  <span>បង្កើតឡើងដោយកូនខ្មែរ</span>
+                </span>
+              </li>
             </ul>
           </div>
         </div>
@@ -89,8 +182,9 @@ export const Footer: React.FC = () => {
             <Heart size={14} fill="#ef4444" color="#ef4444" style={{ display: 'inline', margin: '0 2px' }} />{' '}
             for Cambodia Nature Lovers.
           </p>
-          <div className="footer-eco-badge">
-            🌱 ECO-FRIENDLY & COMMUNITY FIRST
+          <div className="footer-eco-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            <Leaf size={14} color="#10b981" />
+            <span>ECO-FRIENDLY & COMMUNITY FIRST</span>
           </div>
         </div>
       </div>

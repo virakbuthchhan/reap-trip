@@ -1,0 +1,166 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String   @id @default(uuid())
+  email               String   @unique
+  passwordHash        String
+  name                String
+  avatar              String
+  role                String   @default("traveller") // traveller | tour_leader | local_guide | homestay_provider
+  phone               String?
+  telegram            String?
+  province            String?
+  joinedDate          String?
+  languages           Json?    // Array of string languages
+  bio                 String?
+  verified            Boolean  @default(false)
+  savedDestinationIds Json?    // Array of saved destination IDs
+  createdRecipeIds    Json?    // Array of created recipe IDs
+  createdExperienceIds Json?   // Array of created experience IDs
+  stats               Json?    // Object of stats
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Destination {
+  id                       String   @id @default(uuid())
+  nameEn                   String
+  nameKm                   String
+  provinceEn               String
+  provinceKm               String
+  category                 String   // mountain | waterfall | forest | campsite | lake
+  lat                      Float
+  lng                      Float
+  distanceFromPhnomPenhKm  Float
+  estimatedTravelTimeHours Float
+  coverImage               String
+  gallery                  Json     // Array of image URLs
+  descriptionEn            String
+  descriptionKm            String
+  routeDetails             Json     // { descriptionEn, descriptionKm, roadCondition, gpsPin }
+  allowedTransport         Json     // Array of TransportType
+  campingRules             Json     // { allowed, permitRequired, feeDescriptionEn, feeDescriptionKm, rangerRegistrationNeeded, fireRulesEn, fireRulesKm }
+  difficulty               String   // easy | moderate | challenging | extreme
+  bestSeason               Json     // { monthsEn, monthsKm, notesEn, notesKm }
+  nearbyServices           Json     // { fuelStationKm, foodStalls, waterSourceAvailable, toiletAvailable, cellSignalStrength }
+  featuredGuideIds         Json     // Array of guide IDs
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  reports                  TripReport[]
+}
+
+model LocalGuide {
+  id                 String   @id @default(uuid())
+  nameEn             String
+  nameKm             String
+  communityVillageEn String
+  communityVillageKm String
+  destinationIds     Json     // Array of destination IDs
+  phone              String
+  telegramHandle     String?
+  whatsappNumber     String?
+  languages          Json     // Array of languages
+  priceRangeEn       String
+  priceRangeKm       String
+  servicesOffered    Json     // Array of services
+  avatar             String
+  rating             Float    @default(5.0)
+  reviewCount        Int      @default(0)
+  verified           Boolean  @default(true)
+  bioEn              String
+  bioKm              String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model ExpenseItem {
+  id                  String   @id @default(uuid())
+  title               String
+  amount              Float
+  currency            String   @default("USD") // KHR | USD
+  paidByMemberId      String
+  splitAmongMemberIds Json     // Array of member IDs
+  category            String   // fuel | guide_fee | food | camp_fee | transport_rental | other
+  date                String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Recipe {
+  id                String   @id @default(uuid())
+  titleEn           String
+  titleKm           String
+  category          String   // breakfast | lunch | dinner | snack
+  prepTimeMinutes   Int
+  descriptionEn     String
+  descriptionKm     String
+  image             String
+  ingredients       Json     // Array of RecipeIngredient
+  instructionsEn   Json?    // Array of instructions
+  instructionsKm   Json?    // Array of instructions
+  authorName        String?
+  equipmentNeededEn Json?    // Array of equipment needed
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model TripReport {
+  id                  String   @id @default(uuid())
+  destinationId       String
+  authorName          String
+  authorAvatar        String
+  authorRole          String
+  travelDate          String
+  titleEn             String
+  titleKm             String
+  contentEn           String
+  contentKm           String
+  transportUsed       String   // motorbike | sedan_car | suv_4x4 | foot | boat
+  costPerPersonUSD    Float
+  difficultyRating    Int      @default(3)
+  roadConditionUpdate String
+  tipsForNewbiesEn    String
+  tipsForNewbiesKm    String
+  photos              Json     // Array of photo URLs
+  helpfulCount        Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  destination         Destination? @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  comments            Comment[]
+}
+
+model Comment {
+  id           String     @id @default(uuid())
+  tripReportId String
+  authorName   String
+  authorAvatar String
+  text         String
+  date         String
+  createdAt    DateTime   @default(now())
+
+  tripReport   TripReport @relation(fields: [tripReportId], references: [id], onDelete: Cascade)
+}
+
+model PackingItem {
+  id                  String   @id @default(uuid())
+  category            String   // shelter | clothing | food_water | tech_nav | safety_cash | hygiene
+  titleEn             String
+  titleKm             String
+  recommendedFor      Json     // Array of TransportType
+  essentialForCamping Boolean  @default(false)
+  packed              Boolean  @default(false)
+  notesEn             String?
+  notesKm             String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}

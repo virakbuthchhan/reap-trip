@@ -1,30 +1,36 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LocalGuide, Destination } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { AddGuideModal } from './AddGuideModal';
-import { Phone, Send, ShieldCheck, Star, MapPin, Search, MessageSquare, Check, Users, Sparkles, DollarSign, Globe, Grid, List, UserPlus, ThumbsUp, X } from 'lucide-react';
-import { InputField } from './ui/InputField';
+import { Send, MessageSquare, Check, Users, UserPlus, X, Search, Grid, List } from 'lucide-react';
 import { TextAreaField } from './ui/TextAreaField';
 import { SelectField } from './ui/SelectField';
 import { GuideCard } from './ui/GuideCard';
+import { useGuidesQuery } from '@/hooks/useApi';
 
 interface GuideDirectoryProps {
-  guides: LocalGuide[];
-  destinations: Destination[];
+  guides?: LocalGuide[];
+  destinations?: Destination[];
   onAddGuide?: (newGuide: LocalGuide) => void;
 }
 
-export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinations, onAddGuide }) => {
+export const GuideDirectory: React.FC<GuideDirectoryProps> = ({
+  guides: propGuides,
+  destinations = [],
+  onAddGuide
+}) => {
   const { language, t } = useLanguage();
   const { showToast } = useToast();
 
-  const [allGuides, setAllGuides] = useState<LocalGuide[]>(guides);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDestId, setSelectedDestId] = useState<string>('all');
+  const { data: apiGuides, isLoading } = useGuidesQuery(selectedDestId === 'all' ? undefined : selectedDestId);
+
+  const [allGuides, setAllGuides] = useState<LocalGuide[]>(propGuides || []);
+  const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const [inquiryGuide, setInquiryGuide] = useState<LocalGuide | null>(null);
@@ -33,8 +39,13 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
   const [inquirySuccess, setInquirySuccess] = useState(false);
   const [addGuideModalOpen, setAddGuideModalOpen] = useState(false);
 
-  // Endorse / Upvote state map
   const [endorsedMap, setEndorsedMap] = useState<{ [guideId: string]: boolean }>({});
+
+  useEffect(() => {
+    if (apiGuides && !propGuides) {
+      setAllGuides(apiGuides);
+    }
+  }, [apiGuides, propGuides]);
 
   const handleEndorseGuide = (guide: LocalGuide) => {
     const guideId = guide.id;
@@ -59,14 +70,13 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
     showToast(language === 'km' ? `បានបន្ថែមមគ្គុទ្ទេសក៍ ${name} រួចរាល់!` : `Added local guide ${name} to directory!`, 'success');
   };
 
-  // Filtered guides
   const filteredGuides = allGuides.filter((g) => {
     const name = (language === 'km' ? g.nameKm : g.nameEn).toLowerCase();
     const village = (language === 'km' ? g.communityVillageKm : g.communityVillageEn).toLowerCase();
     const query = searchQuery.toLowerCase();
 
     const matchesSearch = name.includes(query) || village.includes(query);
-    const matchesDest = selectedDestId === 'all' || g.destinationIds.includes(selectedDestId);
+    const matchesDest = selectedDestId === 'all' || (g.destinationIds || []).includes(selectedDestId);
 
     return matchesSearch && matchesDest;
   });
@@ -94,7 +104,6 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
           <p className="guide-header-sub">{t.guideSubtitle}</p>
         </div>
 
-        {/* Add Guide Button Aligned Right */}
         <button className="btn btn-primary recommend-guide-btn" onClick={() => setAddGuideModalOpen(true)}>
           <UserPlus size={18} />
           <span>{language === 'km' ? 'បន្ថែមមគ្គុទ្ទេសក៍' : 'Recommend Local Guide'}</span>
@@ -131,7 +140,6 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
           </div>
         </div>
 
-        {/* View Mode Switcher on the FAR RIGHT */}
         <div className="view-mode-toggle">
           <button
             className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
@@ -152,19 +160,24 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
         </div>
       </div>
 
-      {/* Guide Cards Container */}
-      <div className={viewMode === 'grid' ? 'guides-grid' : 'guides-list-view'}>
-        {filteredGuides.map((guide) => (
-          <GuideCard
-            key={guide.id}
-            guide={guide}
-            viewMode={viewMode}
-            isEndorsed={endorsedMap[guide.id] || false}
-            onEndorse={handleEndorseGuide}
-            onInquiry={setInquiryGuide}
-          />
-        ))}
-      </div>
+      {isLoading && allGuides.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)' }}>
+          {language === 'km' ? 'កំពុងទាញយកមគ្គុទ្ទេសក៍...' : 'Loading local guides...'}
+        </div>
+      ) : (
+        <div className={viewMode === 'grid' ? 'guides-grid' : 'guides-list-view'}>
+          {filteredGuides.map((guide) => (
+            <GuideCard
+              key={guide.id}
+              guide={guide}
+              viewMode={viewMode}
+              isEndorsed={endorsedMap[guide.id] || false}
+              onEndorse={handleEndorseGuide}
+              onInquiry={setInquiryGuide}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Add Guide Modal */}
       {addGuideModalOpen && (
@@ -179,7 +192,6 @@ export const GuideDirectory: React.FC<GuideDirectoryProps> = ({ guides, destinat
       {inquiryGuide && (
         <div className="modal-overlay" onClick={() => setInquiryGuide(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
-            {/* Sticky Fixed Header */}
             <div className="modal-header-sticky">
               <div className="modal-header-title-wrap">
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

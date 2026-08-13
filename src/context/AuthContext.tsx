@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { UserProfile, UserRole } from '../types';
+import React, { createContext, useContext, useEffect } from 'react';
+import { UserProfile } from '../types';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export const DEMO_USERS: UserProfile[] = [
   {
@@ -17,9 +18,9 @@ export const DEMO_USERS: UserProfile[] = [
     languages: ['Khmer', 'English'],
     joinedDate: 'Jan 2024',
     verified: true,
-    savedDestinationIds: ['dest_khnong_phsar', 'dest_kirirom', 'dest_tatai'],
-    createdRecipeIds: ['rec_1', 'rec_2'],
-    createdExperienceIds: ['exp_1'],
+    savedDestinationIds: ['khnong-phsar', 'kirirom-national-park', 'tatai-waterfall'],
+    createdRecipeIds: ['recipe-beef-plea', 'recipe-somlar-machou-kroeung'],
+    createdExperienceIds: ['report-1'],
     stats: {
       tripsCompleted: 14,
       rating: 4.9
@@ -38,9 +39,9 @@ export const DEMO_USERS: UserProfile[] = [
     languages: ['Khmer', 'English', 'French'],
     joinedDate: 'Nov 2022',
     verified: true,
-    savedDestinationIds: ['dest_phnom_aural', 'dest_chi_phat'],
-    createdRecipeIds: ['rec_3'],
-    createdExperienceIds: ['exp_2'],
+    savedDestinationIds: ['phnom-aural', 'chi-phat'],
+    createdRecipeIds: ['recipe-noodle-upgrade'],
+    createdExperienceIds: [],
     stats: {
       expeditionsLed: 38,
       tripsCompleted: 52,
@@ -60,7 +61,7 @@ export const DEMO_USERS: UserProfile[] = [
     languages: ['Khmer'],
     joinedDate: 'Mar 2021',
     verified: true,
-    savedDestinationIds: ['dest_khnong_phsar'],
+    savedDestinationIds: ['khnong-phsar'],
     createdRecipeIds: [],
     createdExperienceIds: [],
     stats: {
@@ -77,54 +78,71 @@ interface AuthContextType {
   authModalOpen: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
-  login: (email: string) => boolean;
-  register: (userData: Partial<UserProfile>) => void;
-  logout: () => void;
+  login: (email: string, password?: string) => Promise<boolean>;
+  register: (userData: Partial<UserProfile> & { password?: string }) => Promise<boolean>;
+  logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => void;
-  toggleSaveDestination: (destId: string) => void;
+  toggleSaveDestination: (destId: string) => Promise<void>;
   switchDemoUser: (userId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const { user, authModalOpen, setUser, openAuthModal, closeAuthModal, toggleSaveDestinationId } = useAuthStore();
 
   useEffect(() => {
-    // Load stored user or default to first demo user (Bopha Chan)
-    const stored = localStorage.getItem('reap-trip-auth-user');
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch (e) {
+    // Check active session via API
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user) {
+          setUser(data.user);
+        } else {
+          // Fallback to local storage demo user if offline/unauthenticated
+          const stored = localStorage.getItem('reap-trip-auth-user');
+          if (stored) {
+            try {
+              setUser(JSON.parse(stored));
+            } catch (e) {
+              setUser(DEMO_USERS[0]);
+            }
+          } else {
+            setUser(DEMO_USERS[0]);
+          }
+        }
+      })
+      .catch(() => {
         setUser(DEMO_USERS[0]);
+      });
+  }, [setUser]);
+
+  const login = async (email: string, password?: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: password || 'password123' }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+        closeAuthModal();
+        return true;
       }
-    } else {
-      setUser(DEMO_USERS[0]);
+    } catch (e) {
+      console.warn('API Login failed, trying demo user fallback');
     }
-  }, []);
 
-  const saveUserSession = (u: UserProfile | null) => {
-    setUser(u);
-    if (u) {
-      localStorage.setItem('reap-trip-auth-user', JSON.stringify(u));
-    } else {
-      localStorage.removeItem('reap-trip-auth-user');
-    }
-  };
-
-  const openAuthModal = () => setAuthModalOpen(true);
-  const closeAuthModal = () => setAuthModalOpen(false);
-
-  const login = (email: string): boolean => {
-    const found = DEMO_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const found = DEMO_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (found) {
-      saveUserSession(found);
-      setAuthModalOpen(false);
+      setUser(found);
+      localStorage.setItem('reap-trip-auth-user', JSON.stringify(found));
+      closeAuthModal();
       return true;
     }
-    // If unknown email, auto-create a user session
+
     const newUser: UserProfile = {
       id: `user_${Date.now()}`,
       email,
@@ -136,14 +154,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       savedDestinationIds: [],
       createdRecipeIds: [],
       createdExperienceIds: [],
-      stats: { tripsCompleted: 0 }
+      stats: { tripsCompleted: 0 },
     };
-    saveUserSession(newUser);
-    setAuthModalOpen(false);
+    setUser(newUser);
+    localStorage.setItem('reap-trip-auth-user', JSON.stringify(newUser));
+    closeAuthModal();
     return true;
   };
 
-  const register = (userData: Partial<UserProfile>) => {
+  const register = async (userData: Partial<UserProfile> & { password?: string }): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userData.email || 'adventurer@reaptrip.com',
+          password: userData.password || 'password123',
+          name: userData.name || 'New Adventurer',
+          role: userData.role || 'traveller',
+          phone: userData.phone || '',
+          telegram: userData.telegram || '',
+          province: userData.province || 'Phnom Penh',
+          bio: userData.bio || 'Passionate about exploring Cambodian mountains and rivers.',
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+        closeAuthModal();
+        return true;
+      }
+    } catch (e) {
+      console.warn('API Register failed, using local session');
+    }
+
     const newUser: UserProfile = {
       id: `user_${Date.now()}`,
       email: userData.email || 'adventurer@reaptrip.com',
@@ -160,40 +205,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       savedDestinationIds: [],
       createdRecipeIds: [],
       createdExperienceIds: [],
-      stats: { tripsCompleted: 0 }
+      stats: { tripsCompleted: 0 },
     };
-    saveUserSession(newUser);
-    setAuthModalOpen(false);
+    setUser(newUser);
+    localStorage.setItem('reap-trip-auth-user', JSON.stringify(newUser));
+    closeAuthModal();
+    return true;
   };
 
-  const logout = () => {
-    saveUserSession(null);
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {}
+    setUser(null);
+    localStorage.removeItem('reap-trip-auth-user');
   };
 
   const updateProfile = (data: Partial<UserProfile>) => {
     if (!user) return;
     const updated = { ...user, ...data };
-    saveUserSession(updated);
+    setUser(updated);
+    localStorage.setItem('reap-trip-auth-user', JSON.stringify(updated));
   };
 
-  const toggleSaveDestination = (destId: string) => {
+  const toggleSaveDestination = async (destId: string) => {
     if (!user) {
-      setAuthModalOpen(true);
+      openAuthModal();
       return;
     }
-    const currentSaved = user.savedDestinationIds || [];
-    const isSaved = currentSaved.includes(destId);
-    const newSaved = isSaved
-      ? currentSaved.filter(id => id !== destId)
-      : [...currentSaved, destId];
+    toggleSaveDestinationId(destId);
 
-    updateProfile({ savedDestinationIds: newSaved });
+    try {
+      await fetch(`/api/destinations/${destId}/save`, { method: 'POST' });
+    } catch (e) {}
   };
 
   const switchDemoUser = (userId: string) => {
-    const found = DEMO_USERS.find(u => u.id === userId);
+    const found = DEMO_USERS.find((u) => u.id === userId);
     if (found) {
-      saveUserSession(found);
+      setUser(found);
+      localStorage.setItem('reap-trip-auth-user', JSON.stringify(found));
     }
   };
 
@@ -210,7 +261,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         updateProfile,
         toggleSaveDestination,
-        switchDemoUser
+        switchDemoUser,
       }}
     >
       {children}
