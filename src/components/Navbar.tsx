@@ -262,21 +262,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-          {/* Mobile Burger Menu Button */}
+          {/* Mobile & Tablet Burger Menu Button */}
           <button
-            className="burger-menu-btn mobile-only-btn"
+            className="burger-menu-btn mobile-tablet-only-btn"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle Navigation Menu"
             title="Toggle Menu"
           >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer */}
+      {/* Mobile & Tablet Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="mobile-nav-drawer mobile-only-block">
+        <div className="mobile-nav-drawer mobile-tablet-only-block">
           <div className="mobile-nav-links">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -288,24 +288,49 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className={`mobile-nav-item ${isActive ? 'active' : ''}`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <Icon size={20} />
-                  <span>{item.label}</span>
+                  <div className="mobile-nav-icon-box">
+                    <Icon size={20} />
+                  </div>
+                  <div className="mobile-nav-text">
+                    <span className="mobile-nav-label">{item.label}</span>
+                    <span className="mobile-nav-sub">
+                      {language === 'km' ? item.descriptionKm : item.descriptionEn}
+                    </span>
+                  </div>
                 </Link>
               );
             })}
 
-            {onOpenAddExperience && (
-              <button
-                className="btn btn-primary btn-sm btn-full mt-2"
-                onClick={() => {
-                  onOpenAddExperience();
-                  setMobileMenuOpen(false);
-                }}
-              >
-                <Plus size={16} />
-                <span>{t.btnShareExperience}</span>
-              </button>
-            )}
+            <div className="mobile-drawer-divider" />
+
+            {/* Quick Action Buttons inside Drawer */}
+            <div className="mobile-drawer-actions">
+              {onOpenAddExperience && (
+                <button
+                  className="btn btn-primary btn-sm btn-full"
+                  onClick={() => {
+                    onOpenAddExperience();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Plus size={16} />
+                  <span>{t.btnShareExperience}</span>
+                </button>
+              )}
+
+              {onOpenAdminCMS && (
+                <button
+                  className="btn btn-secondary btn-sm btn-full mt-2"
+                  onClick={() => {
+                    onOpenAdminCMS();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <ShieldAlert size={15} />
+                  <span>{t.btnAdminCMS}</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,11 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { Destination } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { MapPin, Maximize2, Minimize2 } from 'lucide-react';
+
+interface MapViewProps {
+  destinations: Destination[];
+  onSelectDestination: (dest: Destination) => void;
+  selectedDestination?: Destination | null;
+}
 
 const getCustomPinIcon = () => {
   if (typeof window === 'undefined') return undefined as any;
@@ -31,28 +36,6 @@ const getCustomPinIcon = () => {
   });
 };
 
-interface MapViewProps {
-  destinations: Destination[];
-  onSelectDestination: (dest: Destination) => void;
-  selectedDestination?: Destination | null;
-}
-
-const RecenterMap: React.FC<{ selected: Destination | null | undefined; isFullscreen?: boolean }> = ({ selected, isFullscreen }) => {
-  const map = useMap();
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 100);
-    if (selected) {
-      map.flyTo([selected.coordinates.lat, selected.coordinates.lng], 10, {
-        duration: 1.2
-      });
-    }
-    return () => clearTimeout(timer);
-  }, [selected, isFullscreen, map]);
-  return null;
-};
-
 export const MapView: React.FC<MapViewProps> = ({
   destinations,
   onSelectDestination,
@@ -62,10 +45,132 @@ export const MapView: React.FC<MapViewProps> = ({
   const [isMounted, setIsMounted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<{ [key: string]: L.Marker }>({});
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Initialize Leaflet Map safely with reset & cleanup
+  useEffect(() => {
+    if (!isMounted || !containerRef.current) return;
+
+    // Reset _leaflet_id if container was already initialized by previous mount/HMR
+    if ((containerRef.current as any)._leaflet_id) {
+      (containerRef.current as any)._leaflet_id = null;
+    }
+
+    const defaultLat = selectedDestination ? selectedDestination.coordinates.lat : 11.56;
+    const defaultLng = selectedDestination ? selectedDestination.coordinates.lng : 104.10;
+
+    const map = L.map(containerRef.current, {
+      center: [defaultLat, defaultLng],
+      zoom: 8,
+      scrollWheelZoom: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [isMounted]);
+
+  // Update Markers dynamically when destinations or language change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear existing markers
+    Object.values(markersRef.current).forEach((marker) => marker.remove());
+    markersRef.current = {};
+
+    // Add markers
+    destinations.forEach((dest) => {
+      const name = language === 'km' ? dest.nameKm : dest.nameEn;
+      const province = language === 'km' ? dest.provinceKm : dest.provinceEn;
+
+      const popupHtml = `
+        <div style="padding: 4px; max-width: 220px; font-family: sans-serif;">
+          <img
+            src="${dest.coverImage}"
+            alt="${name}"
+            style="width: 100%; height: 95px; object-fit: cover; border-radius: 6px; margin-bottom: 6px;"
+          />
+          <strong style="font-size: 0.95rem; display: block; color: #111;">${name}</strong>
+          <span style="font-size: 0.8rem; color: #666;">📍 ${province}</span>
+          <div style="margin-top: 8px;">
+            <a
+              href="/destinations/${dest.id}"
+              style="
+                display: block;
+                text-align: center;
+                background: #10b981;
+                color: #fff;
+                text-decoration: none;
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 0.78rem;
+                font-weight: bold;
+                cursor: pointer;
+                width: 100%;
+              "
+            >
+              ${t.viewDetails || 'View Details'} →
+            </a>
+          </div>
+        </div>
+      `;
+
+      const marker = L.marker([dest.coordinates.lat, dest.coordinates.lng], {
+        icon: getCustomPinIcon()
+      })
+        .addTo(map)
+        .bindPopup(popupHtml);
+
+      marker.on('click', () => {
+        onSelectDestination(dest);
+      });
+
+      markersRef.current[dest.id] = marker;
+    });
+  }, [destinations, language, isMounted, onSelectDestination, t.viewDetails]);
+
+  // Fly to selected destination when prop changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedDestination) return;
+
+    map.flyTo([selectedDestination.coordinates.lat, selectedDestination.coordinates.lng], 10, {
+      duration: 1.2
+    });
+
+    const marker = markersRef.current[selectedDestination.id];
+    if (marker) {
+      marker.openPopup();
+    }
+  }, [selectedDestination]);
+
+  // Invalidate map size on fullscreen toggle
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [isFullscreen]);
+
+  // Handle Escape key exit fullscreen
   useEffect(() => {
     if (!isMounted) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -84,9 +189,6 @@ export const MapView: React.FC<MapViewProps> = ({
       </div>
     );
   }
-
-  const centerLat = selectedDestination ? selectedDestination.coordinates.lat : 11.56;
-  const centerLng = selectedDestination ? selectedDestination.coordinates.lng : 104.10;
 
   return (
     <div className={`map-view-card ${isFullscreen ? 'fullscreen-active' : ''}`}>
@@ -118,66 +220,7 @@ export const MapView: React.FC<MapViewProps> = ({
       </div>
 
       <div className="map-container-wrapper">
-        <MapContainer
-          center={[centerLat, centerLng]}
-          zoom={8}
-          scrollWheelZoom={true}
-          style={{ width: '100%', height: '100%', borderRadius: isFullscreen ? 0 : 'var(--radius-md)' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          <RecenterMap selected={selectedDestination} isFullscreen={isFullscreen} />
-
-          {destinations.map((dest) => {
-            const name = language === 'km' ? dest.nameKm : dest.nameEn;
-            const province = language === 'km' ? dest.provinceKm : dest.provinceEn;
-            return (
-              <Marker
-                key={dest.id}
-                position={[dest.coordinates.lat, dest.coordinates.lng]}
-                icon={getCustomPinIcon()}
-                eventHandlers={{
-                  click: () => onSelectDestination(dest)
-                }}
-              >
-                <Popup className="custom-map-popup">
-                  <div style={{ padding: '4px', maxWidth: '220px' }}>
-                    <img
-                      src={dest.coverImage}
-                      alt={name}
-                      style={{ width: '100%', height: '95px', objectFit: 'cover', borderRadius: '6px', marginBottom: '6px' }}
-                    />
-                    <strong style={{ fontSize: '0.95rem', display: 'block', color: '#111' }}>{name}</strong>
-                    <span style={{ fontSize: '0.8rem', color: '#666' }}>📍 {province}</span>
-                    <div style={{ marginTop: '8px' }}>
-                      <a
-                        href={`/destinations/${dest.id}`}
-                        style={{
-                          display: 'block',
-                          textAlign: 'center',
-                          background: '#10b981',
-                          color: '#fff',
-                          textDecoration: 'none',
-                          padding: '6px 10px',
-                          borderRadius: '4px',
-                          fontSize: '0.78rem',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                          width: '100%'
-                        }}
-                      >
-                        {t.viewDetails} →
-                      </a>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
+        <div ref={containerRef} style={{ width: '100%', height: '100%', borderRadius: isFullscreen ? 0 : 'var(--radius-md)' }} />
       </div>
     </div>
   );
