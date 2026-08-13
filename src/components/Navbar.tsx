@@ -119,11 +119,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title={user.name}
                 >
                   <img src={user.avatar} alt={user.name} className="nav-user-avatar" />
-                  <div className="nav-user-text">
-                    <span className="nav-user-name">{user.name.split(' ')[0]}</span>
-                    <span className="nav-user-role-badge">{user.role}</span>
-                  </div>
-                  <ChevronDown size={12} className={`chevron-icon ${profileMenuOpen ? 'open' : ''}`} />
+                  <span className="nav-user-name">{user.name.split(' ')[0]}</span>
+                  <ChevronDown size={13} className={`chevron-icon ${profileMenuOpen ? 'open' : ''}`} />
                 </button>
 
                 {profileMenuOpen && (

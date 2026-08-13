@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Sun, Moon, Laptop, ChevronDown, Check } from 'lucide-react';
+import { Sun, Moon, Laptop, Check } from 'lucide-react';
 
 export const ThemeToggle: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -14,7 +14,6 @@ export const ThemeToggle: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
-
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
@@ -26,19 +25,19 @@ export const ThemeToggle: React.FC = () => {
 
   const activeTheme = mounted ? theme : 'system';
 
-  const getThemeIcon = (mode: ThemeMode) => {
-    switch (mode) {
-      case 'dark': return <Moon size={14} color="var(--primary)" />;
-      case 'light': return <Sun size={14} color="var(--accent-gold)" />;
-      case 'system': return <Laptop size={14} color="var(--text-main)" />;
+  const handleToggleClick = () => {
+    if (activeTheme === 'dark') {
+      setTheme('light');
+    } else {
+      setTheme('dark');
     }
   };
 
-  const getThemeLabel = (mode: ThemeMode) => {
+  const getThemeIcon = (mode: ThemeMode) => {
     switch (mode) {
-      case 'system': return language === 'km' ? 'ប្រព័ន្ធ' : 'System';
-      case 'dark': return language === 'km' ? 'ងងឹត' : 'Dark';
-      case 'light': return language === 'km' ? 'ភ្លឺ' : 'Light';
+      case 'dark': return <Moon size={17} className="theme-icon moon-icon" />;
+      case 'light': return <Sun size={17} className="theme-icon sun-icon" />;
+      case 'system': return <Laptop size={17} className="theme-icon system-icon" />;
     }
   };
 
@@ -46,13 +45,19 @@ export const ThemeToggle: React.FC = () => {
     <div className="theme-toggle-dropdown-wrap" ref={containerRef}>
       <button
         type="button"
-        className="theme-toggle-btn"
-        onClick={() => setDropdownOpen(!dropdownOpen)}
-        title={language === 'km' ? 'ប្តូររូបរាង (ពន្លឺ/ងងឹត/ប្រព័ន្ធ)' : 'Toggle Theme (Light/Dark/System)'}
+        className="theme-toggle-icon-btn"
+        onClick={handleToggleClick}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setDropdownOpen(!dropdownOpen);
+        }}
+        title={
+          language === 'km'
+            ? `ពន្លឺ: ${activeTheme === 'dark' ? 'ងងឹត (Dark)' : 'ភ្លឺ (Light)'} - ចុចដើម្បីប្តូរ`
+            : `Theme: ${activeTheme} - Click to toggle`
+        }
       >
         {getThemeIcon(activeTheme)}
-        <span className="theme-btn-label">{getThemeLabel(activeTheme)}</span>
-        <ChevronDown size={12} className={`chevron-icon ${dropdownOpen ? 'open' : ''}`} />
       </button>
 
       {dropdownOpen && (
