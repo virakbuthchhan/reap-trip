@@ -9,25 +9,25 @@ datasource db {
 }
 
 model User {
-  id                  String   @id @default(uuid())
-  email               String   @unique
-  passwordHash        String
-  name                String
-  avatar              String
-  role                String   @default("traveller") // traveller | tour_leader | local_guide | homestay_provider
-  phone               String?
-  telegram            String?
-  province            String?
-  joinedDate          String?
-  languages           Json?    // Array of string languages
-  bio                 String?
-  verified            Boolean  @default(false)
-  savedDestinationIds Json?    // Array of saved destination IDs
-  createdRecipeIds    Json?    // Array of created recipe IDs
+  id                   String   @id @default(uuid())
+  email                String   @unique
+  passwordHash         String
+  name                 String
+  avatar               String
+  role                 String   @default("traveller") // traveller | tour_leader | local_guide | homestay_provider
+  phone                String?
+  telegram             String?
+  province             String?
+  joinedDate           String?
+  languages            Json?    // Array of string languages
+  bio                  String?
+  verified             Boolean  @default(false)
+  savedDestinationIds  Json?    // Array of saved destination IDs
+  createdRecipeIds     Json?    // Array of created recipe IDs
   createdExperienceIds Json?   // Array of created experience IDs
-  stats               Json?    // Object of stats
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  stats                Json?    // Object of stats
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model Destination {
@@ -82,17 +82,34 @@ model LocalGuide {
   updatedAt          DateTime @updatedAt
 }
 
+model TripGroup {
+  id          String        @id @default(uuid())
+  title       String
+  destination String?
+  startDate   String?
+  createdById String?
+  shareCode   String        @unique @default(uuid())
+  members     Json          // Array of { id, name, avatar }
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  expenses    ExpenseItem[]
+}
+
 model ExpenseItem {
-  id                  String   @id @default(uuid())
+  id                  String     @id @default(uuid())
+  tripGroupId         String?
   title               String
   amount              Float
-  currency            String   @default("USD") // KHR | USD
+  currency            String     @default("USD") // KHR | USD
   paidByMemberId      String
-  splitAmongMemberIds Json     // Array of member IDs
-  category            String   // fuel | guide_fee | food | camp_fee | transport_rental | other
+  splitAmongMemberIds Json       // Array of member IDs
+  category            String     // fuel | guide_fee | food | camp_fee | transport_rental | other
   date                String
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  tripGroup           TripGroup? @relation(fields: [tripGroupId], references: [id], onDelete: Cascade)
 }
 
 model Recipe {

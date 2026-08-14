@@ -294,27 +294,76 @@ async function main() {
   }
   console.log('✅ Local Guides seeded');
 
-  // 4. Seed Expenses
+  // 4. Seed Trip Groups & Expenses
+  const tripGroups = [
+    {
+      id: 'trip-oral-mountain',
+      title: 'ទ្រីបទៅ Oral Mountain (Phnom Aural Expedition)',
+      destination: 'Phnom Aural (កំពូលភ្នំឱរ៉ាល់)',
+      startDate: '2026-02-14',
+      shareCode: 'oral-trip-2026',
+      members: [
+        { id: 'm1', name: 'បុត្រ', avatar: '🌾' },
+        { id: 'm2', name: 'ធាន់ណា', avatar: '⛺' },
+        { id: 'm3', name: 'ស៊ីថុង', avatar: '🧗' },
+        { id: 'm4', name: 'ឆើត', avatar: '⛺' }
+      ]
+    },
+    {
+      id: 'trip-khnong-phsar',
+      title: 'ដំណើរទៅខ្នងផ្សារ (Khnong Phsar Pine Plateau)',
+      destination: 'Khnong Phsar (ខ្នងផ្សារ)',
+      startDate: '2026-01-20',
+      shareCode: 'khnong-trip-2026',
+      members: [
+        { id: 'm1', name: 'បុត្រ', avatar: '🌾' },
+        { id: 'm2', name: 'ធាន់ណា', avatar: '⛺' }
+      ]
+    }
+  ];
+
+  for (const group of tripGroups) {
+    await prisma.tripGroup.upsert({
+      where: { id: group.id },
+      update: group,
+      create: group
+    });
+  }
+  console.log('✅ Trip Groups seeded');
+
   const expenses = [
     {
       id: 'exp-1',
-      title: 'Motorbike Fuel (Phnom Penh to Kampong Speu)',
-      amount: 25.0,
+      tripGroupId: 'trip-oral-mountain',
+      title: 'Local Ranger & Guide Fee (Phnom Aural)',
+      amount: 60.0,
       currency: 'USD',
-      paidByMemberId: 'user_traveller_1',
-      splitAmongMemberIds: ['user_traveller_1', 'user_tour_leader_1'],
-      category: 'fuel',
-      date: '2026-02-01'
+      paidByMemberId: 'm1',
+      splitAmongMemberIds: ['m1', 'm2', 'm3', 'm4'],
+      category: 'guide_fee',
+      date: '2026-02-14'
     },
     {
       id: 'exp-2',
-      title: 'Community Guide Fee (Pu Sokha - 2 Days)',
-      amount: 40.0,
+      tripGroupId: 'trip-oral-mountain',
+      title: 'Koyon Trailer Rental & Fuel',
+      amount: 40000.0,
+      currency: 'KHR',
+      paidByMemberId: 'm3',
+      splitAmongMemberIds: ['m1', 'm2', 'm3', 'm4'],
+      category: 'fuel',
+      date: '2026-02-14'
+    },
+    {
+      id: 'exp-3',
+      tripGroupId: 'trip-oral-mountain',
+      title: 'Camp Grocery & Grilled Meat at Market',
+      amount: 45.0,
       currency: 'USD',
-      paidByMemberId: 'user_tour_leader_1',
-      splitAmongMemberIds: ['user_traveller_1', 'user_tour_leader_1', 'user_local_guide_1'],
-      category: 'guide_fee',
-      date: '2026-02-02'
+      paidByMemberId: 'm2',
+      splitAmongMemberIds: ['m1', 'm2', 'm3', 'm4'],
+      category: 'food',
+      date: '2026-02-15'
     }
   ];
 

@@ -17,6 +17,7 @@ export const RegisterSchema = z.object({
 });
 
 export const ExpenseSchema = z.object({
+  tripGroupId: z.string().optional(),
   title: z.string().min(2, 'Title is required'),
   amount: z.number().positive('Amount must be greater than 0'),
   currency: z.enum(['USD', 'KHR']).default('USD'),

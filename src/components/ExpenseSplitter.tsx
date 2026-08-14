@@ -1,441 +1,1003 @@
 'use client';
 
-import React, { useState } from 'react';
-import { TripMember, ExpenseItem, SettlementDebt } from '../types';
+import React, { useState, useEffect } from 'react';
+import { TripMember, ExpenseItem, TripExpenseGroup } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useToast } from '../context/ToastContext';
-import { Calculator, Plus, UserPlus, Trash2, ArrowRight, Share2, Copy, Check, DollarSign, Scale, Users, Receipt, Sparkles, Download } from 'lucide-react';
+import {
+  Calculator,
+  Plus,
+  UserPlus,
+  Trash2,
+  Pencil,
+  ArrowRight,
+  Share2,
+  Check,
+  Receipt,
+  Sparkles,
+  Download,
+  Calendar,
+  MapPin,
+  ChevronLeft,
+  PieChart,
+  X,
+  Smile,
+} from 'lucide-react';
 import { ExportExpenseModal } from './ExportExpenseModal';
 import { InputField } from './ui/InputField';
 import { SelectField, SelectOption } from './ui/SelectField';
+import {
+  useTripGroupsQuery,
+  useCreateTripGroupMutation,
+  useExpensesQuery,
+  useAddExpenseMutation,
+  useUpdateExpenseMutation,
+  useDeleteExpenseMutation,
+  useSettlementsQuery,
+} from '@/hooks/useApi';
+
+// Preset emojis for random fallback or quick picker
+const PRESET_MEMBER_EMOJIS = ['🏕️', '🧗', '🎒', '⛺', '🧭', '🌲', '🧢', '🚴', '🌄', '🥾', '🔥', '🛶', '📸', '🌾'];
+
+// Currency formatting helpers
+export const formatUSD = (val: number) => `$${(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export const formatKHR = (val: number) => `៛${Math.round(val || 0).toLocaleString('en-US')}`;
+
+// Helper component to render member avatar (URL or Emoji Badge)
+export const MemberAvatar: React.FC<{ avatar?: string; name: string; size?: number }> = ({ avatar, name, size = 24 }) => {
+  const isUrl = avatar && (avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('data:'));
+
+  if (isUrl) {
+    return (
+      <img
+        src={avatar}
+        alt={name}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          border: '1.5px solid var(--card-bg)',
+          flexShrink: 0,
+        }}
+        onError={(e) => {
+          const target = e.currentTarget;
+          target.onerror = null;
+          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D9488&color=fff&size=64`;
+        }}
+      />
+    );
+  }
+
+  const emoji = avatar || PRESET_MEMBER_EMOJIS[Math.abs(name.charCodeAt(0) || 0) % PRESET_MEMBER_EMOJIS.length];
+
+  return (
+    <span
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: '50%',
+        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: `${size * 0.55}px`,
+        lineHeight: 1,
+        flexShrink: 0,
+      }}
+    >
+      {emoji}
+    </span>
+  );
+};
 
 export const ExpenseSplitter: React.FC = () => {
   const { language, t } = useLanguage();
   const { showToast } = useToast();
 
-  // Members state
-  const [members, setMembers] = useState<TripMember[]>([
-    { id: 'm1', name: 'Vireak (Me)', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80' },
-    { id: 'm2', name: 'Bopha', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80' },
-    { id: 'm3', name: 'Dara', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&q=80' },
-    { id: 'm4', name: 'Sophea', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80' }
-  ]);
+  // Active view: null = Trip History List, string = Active Trip ID
+  const [activeTripId, setActiveTripId] = useState<string | null>(null);
 
-  const [newMemberName, setNewMemberName] = useState('');
+  // Fetch all trip expense groups from API
+  const { data: tripGroups = [], isLoading: isLoadingTrips } = useTripGroupsQuery();
+  const createTripGroupMutation = useCreateTripGroupMutation();
 
-  // Expenses state
-  const [expenses, setExpenses] = useState<ExpenseItem[]>([
-    {
-      id: 'e1',
-      title: 'Local Guide Fee (Uncle Sokha)',
-      amount: 60,
-      currency: 'USD',
-      paidByMemberId: 'm1',
-      splitAmongMemberIds: ['m1', 'm2', 'm3', 'm4'],
-      category: 'guide_fee',
-      date: '2026-02-10'
-    },
-    {
-      id: 'e2',
-      title: 'Motorbike Fuel (Total)',
-      amount: 40000,
-      currency: 'KHR',
-      paidByMemberId: 'm3',
-      splitAmongMemberIds: ['m1', 'm2', 'm3', 'm4'],
-      category: 'fuel',
-      date: '2026-02-10'
-    },
-    {
-      id: 'e3',
-      title: 'Camp Grocery & Grilled Meat at Local Market',
-      amount: 45,
-      currency: 'USD',
-      paidByMemberId: 'm2',
-      splitAmongMemberIds: ['m1', 'm2', 'm3', 'm4'],
-      category: 'food',
-      date: '2026-02-11'
-    }
-  ]);
+  // Fetch active trip expenses & settlements
+  const { data: apiExpenses = [], isLoading: isLoadingExpenses } = useExpensesQuery(activeTripId || undefined);
+  const { data: settlementData } = useSettlementsQuery(activeTripId || undefined);
 
-  // Form modal state for adding expense
-  const [showAddModal, setShowAddModal] = useState(false);
+  const addExpenseMutation = useAddExpenseMutation();
+  const updateExpenseMutation = useUpdateExpenseMutation();
+  const deleteExpenseMutation = useDeleteExpenseMutation();
+
+  // Modal states
+  const [showCreateTripModal, setShowCreateTripModal] = useState(false);
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+
+  // Create Trip Form state
+  const [newTripTitle, setNewTripTitle] = useState('');
+  const [newTripDestination, setNewTripDestination] = useState('');
+  const [newTripDate, setNewTripDate] = useState('');
+  const [newTripMembers, setNewTripMembers] = useState<TripMember[]>([
+    { id: 'm1', name: 'Vireak (Me)', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80' },
+    { id: 'm2', name: 'Bopha', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80' },
+  ]);
+
+  // Add Member Input states
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberAvatar, setNewMemberAvatar] = useState('');
+  const [showAvatarOptions, setShowAvatarOptions] = useState(false);
+
+  // Add/Edit Expense Form state
   const [expTitle, setExpTitle] = useState('');
   const [expAmount, setExpAmount] = useState('');
   const [expCurrency, setExpCurrency] = useState<'USD' | 'KHR'>('USD');
   const [expPaidBy, setExpPaidBy] = useState('m1');
-  const [expSplitAmong, setExpSplitAmong] = useState<string[]>(['m1', 'm2', 'm3', 'm4']);
+  const [expSplitAmong, setExpSplitAmong] = useState<string[]>(['m1', 'm2']);
   const [expCategory, setExpCategory] = useState<ExpenseItem['category']>('food');
-  const [copiedSummary, setCopiedSummary] = useState(false);
+  const [copiedShareLink, setCopiedShareLink] = useState(false);
+
+  // Check URL search parameters on mount (e.g., /expenses?tripId=...)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const paramTripId = params.get('tripId');
+      if (paramTripId) {
+        setActiveTripId(paramTripId);
+      }
+    }
+  }, []);
+
+  const activeTrip = tripGroups.find((t) => t.id === activeTripId);
+  const activeMembers: TripMember[] = activeTrip?.members || newTripMembers;
 
   const currencyOptions: SelectOption[] = [
     { value: 'USD', label: 'USD ($)', icon: '💵' },
-    { value: 'KHR', label: 'KHR (៛ Riel)', icon: '៛' }
+    { value: 'KHR', label: 'KHR (៛ Riel)', icon: '៛' },
   ];
 
-  const memberOptions: SelectOption[] = members.map((m) => ({
+  const memberOptions: SelectOption[] = activeMembers.map((m) => ({
     value: m.id,
     label: m.name,
-    icon: '👤'
+    icon: '👤',
   }));
 
   const categoryOptions: SelectOption[] = [
-    { value: 'fuel', label: 'Fuel / Gas', icon: '⛽' },
-    { value: 'food', label: 'Food & Market Grocery', icon: '🍲' },
-    { value: 'guide_fee', label: 'Local Guide & Ranger Fee', icon: '👤' },
-    { value: 'camp_fee', label: 'Campsite Fee', icon: '⛺' },
-    { value: 'transport_rental', label: 'Transport Rental', icon: '🛵' },
-    { value: 'other', label: 'Other Expense', icon: '📦' }
+    { value: 'fuel', label: language === 'km' ? 'ប្រេងសាំង/ធ្វើដំណើរ' : 'Fuel & Transport', icon: '⛽' },
+    { value: 'food', label: language === 'km' ? 'អាហារ & គ្រឿងទេស' : 'Food & Market Grocery', icon: '🍲' },
+    { value: 'guide_fee', label: language === 'km' ? 'ថ្លៃអ្នកនាំផ្លូវ & សហគមន៍' : 'Local Guide & Ranger Fee', icon: '👤' },
+    { value: 'camp_fee', label: language === 'km' ? 'ថ្លៃតំបន់បោះជំរុំ' : 'Campsite Fee', icon: '⛺' },
+    { value: 'transport_rental', label: language === 'km' ? 'ជួលគោយន្ត/ទូក/ម៉ូតូ' : 'Transport Rental', icon: '🛵' },
+    { value: 'other', label: language === 'km' ? 'ការចំណាយផ្សេងៗ' : 'Other Expense', icon: '📦' },
   ];
 
-  // Add new member
-  const handleAddMember = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Handle Add Member to New Trip
+  const handleAddMemberToNewTrip = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!newMemberName.trim()) return;
+
+    let avatarVal = newMemberAvatar.trim();
+    if (!avatarVal) {
+      avatarVal = PRESET_MEMBER_EMOJIS[Math.floor(Math.random() * PRESET_MEMBER_EMOJIS.length)];
+    }
+
     const newM: TripMember = {
       id: `m_${Date.now()}`,
       name: newMemberName.trim(),
-      avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 1000)}?auto=format&fit=crop&w=100&q=80`
+      avatar: avatarVal,
     };
-    setMembers([...members, newM]);
-    setExpSplitAmong([...expSplitAmong, newM.id]);
+
+    setNewTripMembers([...newTripMembers, newM]);
     setNewMemberName('');
+    setNewMemberAvatar('');
+    setShowAvatarOptions(false);
   };
 
-  const handleDeleteMember = (id: string) => {
-    if (members.length <= 2) {
-      showToast(language === 'km' ? 'ត្រូវមានយ៉ាងហោចណាស់ ២នាក់' : 'At least 2 members required', 'warning');
-      return;
-    }
-    setMembers(members.filter((m) => m.id !== id));
-    setExpenses(expenses.filter((e) => e.paidByMemberId !== id));
+  const handleRemoveMemberFromNewTrip = (memberId: string) => {
+    setNewTripMembers(newTripMembers.filter((m) => m.id !== memberId));
   };
 
-  // Add expense
-  const handleAddExpense = (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsedAmount = parseFloat(expAmount);
-    if (!expTitle || isNaN(parsedAmount) || parsedAmount <= 0) return;
+  // Open Edit Expense Modal
+  const handleEditExpenseClick = (exp: ExpenseItem) => {
+    setEditingExpenseId(exp.id);
+    setExpTitle(exp.title);
+    setExpAmount(String(exp.amount));
+    setExpCurrency(exp.currency);
+    setExpPaidBy(exp.paidByMemberId);
+    setExpSplitAmong(exp.splitAmongMemberIds || []);
+    setExpCategory(exp.category);
+    setShowAddExpenseModal(true);
+  };
 
-    const newExp: ExpenseItem = {
-      id: `e_${Date.now()}`,
-      title: expTitle,
-      amount: parsedAmount,
-      currency: expCurrency,
-      paidByMemberId: expPaidBy,
-      splitAmongMemberIds: expSplitAmong.length > 0 ? expSplitAmong : members.map(m => m.id),
-      category: expCategory,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    setExpenses([...expenses, newExp]);
-    setShowAddModal(false);
+  // Open Add Expense Modal
+  const handleOpenAddExpenseModal = () => {
+    setEditingExpenseId(null);
     setExpTitle('');
     setExpAmount('');
+    setExpCurrency('USD');
+    setExpPaidBy(activeMembers[0]?.id || 'm1');
+    setExpSplitAmong(activeMembers.map((m) => m.id));
+    setExpCategory('food');
+    setShowAddExpenseModal(true);
   };
 
-  const handleDeleteExpense = (id: string) => {
-    setExpenses(expenses.filter((e) => e.id !== id));
+  // Handle Create Trip
+  const handleCreateTripSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTripTitle.trim()) {
+      showToast(language === 'km' ? 'សូមបញ្ចូលឈ្មោះដំណើរកម្សាន្ត!' : 'Please enter a trip title!', 'error');
+      return;
+    }
+
+    try {
+      const created = await createTripGroupMutation.mutateAsync({
+        title: newTripTitle.trim(),
+        destination: newTripDestination.trim(),
+        startDate: newTripDate || new Date().toISOString().split('T')[0],
+        members: newTripMembers,
+      });
+
+      showToast(language === 'km' ? 'បង្កើតដំណើរកម្សាន្តជោគជ័យ!' : 'Trip created successfully!', 'success');
+      setShowCreateTripModal(false);
+      setActiveTripId(created.id);
+      setNewTripTitle('');
+      setNewTripDestination('');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to create trip', 'error');
+    }
   };
 
-  const KHR_PER_USD = 4000;
+  // Handle Add or Edit Expense Submit
+  const handleAddExpenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!expTitle || !expAmount || Number(expAmount) <= 0) {
+      showToast(language === 'km' ? 'សូមបញ្ចូលឈ្មោះ និងចំនួនប្រាក់ត្រឹមត្រូវ!' : 'Please enter a valid title and amount!', 'error');
+      return;
+    }
+    if (expSplitAmong.length === 0) {
+      showToast(language === 'km' ? 'សូមជ្រើសរើសយ៉ាងហោចណាស់ម្នាក់ដើម្បីចែករំលែក!' : 'Select at least one member to split!', 'error');
+      return;
+    }
 
-  const calculateSettlements = (): SettlementDebt[] => {
-    const netBalances: { [memberId: string]: number } = {};
-    members.forEach((m) => { netBalances[m.id] = 0; });
-
-    expenses.forEach((exp) => {
-      const amountUSD = exp.currency === 'USD' ? exp.amount : exp.amount / KHR_PER_USD;
-      if (netBalances[exp.paidByMemberId] !== undefined) {
-        netBalances[exp.paidByMemberId] += amountUSD;
+    try {
+      if (editingExpenseId) {
+        await updateExpenseMutation.mutateAsync({
+          id: editingExpenseId,
+          tripGroupId: activeTripId || undefined,
+          title: expTitle,
+          amount: Number(expAmount),
+          currency: expCurrency,
+          paidByMemberId: expPaidBy,
+          splitAmongMemberIds: expSplitAmong,
+          category: expCategory,
+          date: new Date().toISOString().split('T')[0],
+        });
+        showToast(language === 'km' ? 'បានកែប្រែការចំណាយជោគជ័យ!' : 'Expense updated successfully!', 'success');
+      } else {
+        await addExpenseMutation.mutateAsync({
+          tripGroupId: activeTripId || undefined,
+          title: expTitle,
+          amount: Number(expAmount),
+          currency: expCurrency,
+          paidByMemberId: expPaidBy,
+          splitAmongMemberIds: expSplitAmong,
+          category: expCategory,
+          date: new Date().toISOString().split('T')[0],
+        });
+        showToast(language === 'km' ? 'បានបន្ថែមការចំណាយជោគជ័យ!' : 'Expense item added!', 'success');
       }
-      const splitters = exp.splitAmongMemberIds.length > 0 ? exp.splitAmongMemberIds : members.map(m => m.id);
-      const sharePerPerson = amountUSD / splitters.length;
-      splitters.forEach((mId) => {
-        if (netBalances[mId] !== undefined) {
-          netBalances[mId] -= sharePerPerson;
-        }
-      });
-    });
 
-    const debtors: { id: string; amount: number }[] = [];
-    const creditors: { id: string; amount: number }[] = [];
-
-    Object.entries(netBalances).forEach(([id, bal]) => {
-      if (bal < -0.01) debtors.push({ id, amount: Math.abs(bal) });
-      else if (bal > 0.01) creditors.push({ id, amount: bal });
-    });
-
-    const settlements: SettlementDebt[] = [];
-    let dIdx = 0;
-    let cIdx = 0;
-
-    while (dIdx < debtors.length && cIdx < creditors.length) {
-      const debtor = debtors[dIdx];
-      const creditor = creditors[cIdx];
-      const transferAmountUSD = Math.min(debtor.amount, creditor.amount);
-
-      settlements.push({
-        fromMemberId: debtor.id,
-        toMemberId: creditor.id,
-        amountUSD: Math.round(transferAmountUSD * 100) / 100,
-        amountKHR: Math.round(transferAmountUSD * KHR_PER_USD)
-      });
-
-      debtor.amount -= transferAmountUSD;
-      creditor.amount -= transferAmountUSD;
-
-      if (debtor.amount < 0.01) dIdx++;
-      if (creditor.amount < 0.01) cIdx++;
+      setShowAddExpenseModal(false);
+      setEditingExpenseId(null);
+      setExpTitle('');
+      setExpAmount('');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to save expense', 'error');
     }
-
-    return settlements;
   };
 
-  const settlements = calculateSettlements();
-  const totalExpenseUSD = expenses.reduce((sum, exp) => sum + (exp.currency === 'USD' ? exp.amount : exp.amount / KHR_PER_USD), 0);
-
-  const handleCopySummary = () => {
-    let summaryText = `🏕️ *Reap Trip Expense Summary*\n---------------------------\n`;
-    summaryText += `👥 Group Members: ${members.map((m) => m.name).join(', ')}\n\n`;
-    summaryText += `📊 *Expenses Logged:*\n`;
-    expenses.forEach((e) => {
-      const payer = members.find((m) => m.id === e.paidByMemberId)?.name || 'Someone';
-      const formattedAmt = e.currency === 'USD' ? `$${e.amount}` : `${e.amount.toLocaleString()}៛`;
-      summaryText += `- ${e.title}: ${formattedAmt} (Paid by ${payer})\n`;
-    });
-    summaryText += `\n⚖️ *Settlement Summary (Who pays whom):*\n`;
-    if (settlements.length === 0) {
-      summaryText += `Everyone is settled up! Zero debt. 🎉\n`;
-    } else {
-      settlements.forEach((s) => {
-        const debtorName = members.find((m) => m.id === s.fromMemberId)?.name;
-        const creditorName = members.find((m) => m.id === s.toMemberId)?.name;
-        summaryText += `👉 ${debtorName} ➔ pay ${creditorName}: $${s.amountUSD} (${s.amountKHR.toLocaleString()}៛)\n`;
-      });
-    }
-    summaryText += `\nCalculated with Reap Trip (ដំណើរកម្សាន្ត) 🚀`;
-
-    navigator.clipboard.writeText(summaryText);
-    setCopiedSummary(true);
-    setTimeout(() => setCopiedSummary(false), 2500);
+  // Share Trip Link
+  const handleCopyShareLink = (tripId?: string) => {
+    const targetId = tripId || activeTripId;
+    const url = `${window.location.origin}/expenses?tripId=${targetId}`;
+    navigator.clipboard.writeText(url);
+    setCopiedShareLink(true);
+    showToast(
+      language === 'km' ? 'បានចម្លងតំណដំណើរកម្សាន្ត! អ្នកអាចផ្ញើទៅកាន់មិត្តភក្តិ' : 'Trip link copied! Share it with your group members.',
+      'success'
+    );
+    setTimeout(() => setCopiedShareLink(false), 2500);
   };
+
+  const settlements = settlementData?.settlements || [];
+  const rawTotalUSD = settlementData?.totalExpensesUSD || 0;
+  const formattedTotalUSD = formatUSD(rawTotalUSD);
+  const formattedTotalKHR = formatKHR(rawTotalUSD * 4100);
 
   return (
-    <div className="expense-splitter-page container">
-      {/* Header */}
-      <div className="section-header flex-between">
-        <div>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Scale size={22} color="var(--primary)" />
-            <span>{t.expensesHeader}</span>
+    <div className="expenses-page container">
+      {/* Page Header */}
+      <div className="expense-page-header" style={{ marginBottom: '2rem' }}>
+        <div className="header-text-group">
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.75rem', fontWeight: 800 }}>
+            <Calculator size={28} color="var(--primary)" />
+            <span>{language === 'km' ? 'ប្រព័ន្ធគណនា និងរក្សាប្រវត្តិការចំណាយដំណើរកម្សាន្ត' : 'Group Trip Expense History & Splitter'}</span>
           </h2>
-          <p>{t.expensesSub}</p>
+          <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+            {language === 'km'
+              ? 'បង្កើតដំណើរកម្សាន្ត រក្សាប្រវត្តិ និងចែករំលែកតំណទៅកាន់មិត្តភក្តិដើម្បីបញ្ចូលការចំណាយរួមគ្នា'
+              : 'Create trip groups, track expense histories, and share trip links so participants can record expenses.'}
+          </p>
         </div>
-        <div className="header-actions-group" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button className="btn btn-primary" onClick={() => setShowExportModal(true)}>
-            <Download size={18} />
-            <span>{language === 'km' ? 'នាំចេញ / ទាញយក' : 'Export & Save Report'}</span>
-          </button>
 
-          <button className="btn btn-secondary" onClick={handleCopySummary}>
-            {copiedSummary ? <Check size={18} /> : <Share2 size={18} />}
-            <span>{copiedSummary ? (language === 'km' ? 'បានចម្លង!' : 'Copied!') : (language === 'km' ? 'ចម្លងអត្ថបទ' : 'Copy Summary')}</span>
+        {!activeTripId && (
+          <button className="btn btn-primary" onClick={() => setShowCreateTripModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Plus size={18} />
+            <span>{language === 'km' ? 'បង្កើតដំណើរកម្សាន្តថ្មី (e.g. ទ្រីបទៅOral Mountain)' : 'Create New Trip (e.g. Phnom Aural Trip)'}</span>
           </button>
-        </div>
+        )}
       </div>
 
-      <div className="expense-layout-grid">
-        {/* Left Column: Group Members & Expense List */}
-        <div className="expense-left-col">
-          {/* Members Card */}
-          <div className="glass-card">
-            <div className="card-title-row">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Users size={18} color="var(--primary)" />
-                <span>{language === 'km' ? 'សមាជិកក្រុម' : 'Trip Members'} ({members.length})</span>
-              </h3>
+      {/* VIEW 1: TRIP HISTORY SCREEN */}
+      {!activeTripId ? (
+        <div className="trip-history-section">
+          {isLoadingTrips ? (
+            <div style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--text-muted)' }}>
+              {language === 'km' ? 'កំពុងទាញយកប្រវត្តិដំណើរកម្សាន្ត...' : 'Loading trip history...'}
+            </div>
+          ) : tripGroups.length === 0 ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '4rem 2rem',
+                backgroundColor: 'var(--card-bg)',
+                borderRadius: '20px',
+                border: '1px dashed var(--border-color)',
+              }}
+            >
+              <Receipt size={48} color="var(--primary)" style={{ opacity: 0.8, marginBottom: '1rem' }} />
+              <h3>{language === 'km' ? 'មិនទាន់មានប្រវត្តិដំណើរកម្សាន្ត' : 'No Trip Expenses Recorded Yet'}</h3>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                {language === 'km'
+                  ? 'សូមចុចប៊ូតុងខាងក្រោមដើម្បីបង្កើតដំណើរកម្សាន្តដំបូងរបស់អ្នក (ឧ. ទ្រីបទៅ Oral Mountain)'
+                  : 'Click below to create your first group trip expense history (e.g., Oral Mountain Summit Trip).'}
+              </p>
+              <button className="btn btn-primary" onClick={() => setShowCreateTripModal(true)}>
+                <Plus size={18} />
+                <span>{language === 'km' ? 'បង្កើតដំណើរកម្សាន្តដំបូង' : 'Create First Trip'}</span>
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+                  📂 {language === 'km' ? 'ប្រវត្តិដំណើរកម្សាន្តទាំងអស់ (' + tripGroups.length + ')' : 'All Recorded Trips (' + tripGroups.length + ')'}
+                </h3>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                  gap: '1.5rem',
+                }}
+              >
+                {tripGroups.map((trip) => (
+                  <div
+                    key={trip.id}
+                    style={{
+                      backgroundColor: 'var(--card-bg)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '20px',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                        <span className="badge badge-emerald" style={{ fontSize: '0.75rem' }}>
+                          <Calendar size={12} style={{ marginRight: '4px' }} />
+                          {trip.startDate || '2026-02-14'}
+                        </span>
+                        <button
+                          className="icon-btn"
+                          onClick={() => handleCopyShareLink(trip.id)}
+                          title="Copy Share Link"
+                          style={{ padding: '4px 8px', borderRadius: '8px', border: '1px solid var(--border-color)' }}
+                        >
+                          <Share2 size={14} />
+                        </button>
+                      </div>
+
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-main)' }}>
+                        {trip.title}
+                      </h3>
+
+                      {trip.destination && (
+                        <p style={{ fontSize: '0.875rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '1rem' }}>
+                          <MapPin size={14} />
+                          <span>{trip.destination}</span>
+                        </p>
+                      )}
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                        <div style={{ display: 'flex', margin: '0 4px 0 0' }}>
+                          {(trip.members || []).slice(0, 4).map((m, idx) => (
+                            <div key={m.id || idx} style={{ marginLeft: idx > 0 ? '-8px' : 0 }}>
+                              <MemberAvatar avatar={m.avatar} name={m.name} size={28} />
+                            </div>
+                          ))}
+                        </div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {(trip.members || []).length} {language === 'km' ? 'សមាជិកចូលរួម' : 'Participants'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
+                          {language === 'km' ? 'សរុបចំណាយ:' : 'Total Expense:'}
+                        </span>
+                        <strong style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>
+                          {formatUSD(trip.totalSpentUSD || 0)}
+                        </strong>
+                      </div>
+
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => setActiveTripId(trip.id)}
+                        style={{ padding: '0.5rem 1rem', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                      >
+                        <span>{language === 'km' ? 'មើលចំណាយ' : 'View Expenses'}</span>
+                        <ArrowRight size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* VIEW 2: DETAILED TRIP EXPENSE TRACKER */
+        <div>
+          {/* Header Bar */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: 'var(--card-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '20px',
+              padding: '1.25rem 1.5rem',
+              marginBottom: '1.5rem',
+              gap: '1rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setActiveTripId(null)}
+                style={{ padding: '0.5rem 0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <ChevronLeft size={18} />
+                <span>{language === 'km' ? 'ត្រឡប់ទៅបញ្ជីដំណើរកម្សាន្ត' : 'All Trips'}</span>
+              </button>
+              <div>
+                <h3 style={{ fontSize: '1.35rem', fontWeight: 800, margin: 0 }}>
+                  {activeTrip?.title || 'Trip Expenses'}
+                </h3>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  {activeTrip?.destination ? `📍 ${activeTrip.destination} • ` : ''}
+                  {(activeMembers || []).length} {language === 'km' ? 'សមាជិកចូលរួម' : 'Participants'}
+                </span>
+              </div>
             </div>
 
-            <div className="members-chips-list">
-              {members.map((m) => (
-                <div key={m.id} className="member-chip">
-                  <img src={m.avatar} alt={m.name} className="member-avatar" />
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => handleCopyShareLink()}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)' }}
+              >
+                {copiedShareLink ? <Check size={16} color="#10b981" /> : <Share2 size={16} />}
+                <span>{language === 'km' ? 'ចែករំលែកតំណទៅកាន់មិត្តភក្តិ' : 'Share Trip Link'}</span>
+              </button>
+
+              <button
+                className="btn btn-primary"
+                onClick={handleOpenAddExpenseModal}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <Plus size={18} />
+                <span>{language === 'km' ? 'បន្ថែមការចំណាយ' : 'Add Expense Item'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Members Bar */}
+          <div
+            style={{
+              backgroundColor: 'var(--card-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '16px',
+              padding: '1rem 1.25rem',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+              👥 {language === 'km' ? 'សមាជិកក្នុងដំណើរកម្សាន្តនេះ:' : 'Trip Participants:'}
+            </span>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {activeMembers.map((m) => (
+                <div
+                  key={m.id}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    color: 'var(--primary)',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  <MemberAvatar avatar={m.avatar} name={m.name} size={20} />
                   <span>{m.name}</span>
-                  <button className="delete-member-btn" onClick={() => handleDeleteMember(m.id)}>✕</button>
                 </div>
               ))}
             </div>
-
-            {/* Add Member Form */}
-            <form onSubmit={handleAddMember} className="add-member-form">
-              <input
-                type="text"
-                className="custom-modern-input"
-                placeholder={language === 'km' ? 'បន្ថែមឈ្មោះសមាជិកថ្មី...' : 'Add new member name...'}
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-              />
-              <button type="submit" className="btn btn-secondary btn-sm">
-                <UserPlus size={16} /> {t.addMember}
-              </button>
-            </form>
           </div>
 
-          {/* Expenses Logged List */}
-          <div className="glass-card" style={{ marginTop: '1.5rem' }}>
-            <div className="card-title-row flex-between">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Receipt size={18} color="var(--primary)" />
-                <span>{language === 'km' ? 'បញ្ជីចំណាយដែលបានកត់ត្រា' : 'Logged Expenses'}</span>
-              </h3>
-              <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-                <Plus size={16} /> {t.addExpense}
-              </button>
-            </div>
-
-            {expenses.length > 0 ? (
-              <div className="expenses-list">
-                {expenses.map((exp) => {
-                  const payer = members.find((m) => m.id === exp.paidByMemberId);
-                  const formattedAmt = exp.currency === 'USD' ? `$${exp.amount}` : `${exp.amount.toLocaleString()} ៛`;
-
-                  return (
-                    <div key={exp.id} className="expense-row">
-                      <div className="exp-icon">
-                        <Receipt size={20} color="var(--primary)" />
-                      </div>
-                      <div className="exp-info">
-                        <strong>{exp.title}</strong>
-                        <p className="exp-meta">
-                          {t.paidBy} <strong style={{ color: 'var(--primary)' }}>{payer?.name}</strong> • {exp.date}
-                        </p>
-                      </div>
-                      <div className="exp-amount">
-                        <span>{formattedAmt}</span>
-                        <button className="delete-exp-btn" onClick={() => handleDeleteExpense(exp.id)}>
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+          {/* Grid Layout: Expenses Table & Settlement Summary */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem' }}>
+            {/* Left: Expenses Table */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h4 style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                  🧾 {language === 'km' ? 'បញ្ជីចំណាយទាំងអស់ (' + apiExpenses.length + ')' : 'Recorded Expense Items (' + apiExpenses.length + ')'}
+                </h4>
               </div>
-            ) : (
-              <p className="text-muted text-center" style={{ padding: '2rem 0' }}>
-                {t.noExpenses}
-              </p>
-            )}
-          </div>
-        </div>
 
-        {/* Right Column: Automated Settlement Calculation */}
-        <div className="expense-right-col">
-          <div className="glass-card settlement-card">
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Calculator size={18} color="var(--primary)" />
-              <span>{t.settlementSummary}</span>
-            </h3>
-            <p className="settlement-sub">
-              {language === 'km'
-                ? 'គណនាស្វ័យប្រវត្តិដើម្បីទូទាត់ប្រាក់ដោយមិនបាច់ជំពាក់ច្រើនដំណាក់កាល'
-                : 'Optimized minimum payments to settle all debts.'}
-            </p>
-
-            <div className="settlement-results">
-              {settlements.length > 0 ? (
-                settlements.map((s, idx) => {
-                  const debtor = members.find((m) => m.id === s.fromMemberId);
-                  const creditor = members.find((m) => m.id === s.toMemberId);
-
-                  return (
-                    <div key={idx} className="settlement-item">
-                      <div className="person-box">
-                        <img src={debtor?.avatar} alt={debtor?.name} />
-                        <strong>{debtor?.name}</strong>
-                      </div>
-
-                      <div className="transfer-arrow flex-column">
-                        <span className="debt-usd">${s.amountUSD}</span>
-                        <span className="debt-khr">({s.amountKHR.toLocaleString()} ៛)</span>
-                        <ArrowRight size={20} color="var(--primary)" />
-                      </div>
-
-                      <div className="person-box">
-                        <img src={creditor?.avatar} alt={creditor?.name} />
-                        <strong>{creditor?.name}</strong>
-                      </div>
-                    </div>
-                  );
-                })
+              {isLoadingExpenses ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  {language === 'km' ? 'កំពុងទាញយកការចំណាយ...' : 'Loading expenses...'}
+                </div>
+              ) : apiExpenses.length === 0 ? (
+                <div
+                  style={{
+                    padding: '3rem 2rem',
+                    textAlign: 'center',
+                    backgroundColor: 'var(--card-bg)',
+                    borderRadius: '16px',
+                    border: '1px dashed var(--border-color)',
+                  }}
+                >
+                  <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                    {language === 'km' ? 'មិនទាន់មានការចំណាយបានបញ្ចូលក្នុងដំណើរកម្សាន្តនេះទេ' : 'No expenses recorded for this trip yet.'}
+                  </p>
+                  <button className="btn btn-primary" onClick={handleOpenAddExpenseModal}>
+                    <Plus size={16} />
+                    <span>{language === 'km' ? 'បញ្ចូលការចំណាយដំបូង' : 'Record First Expense'}</span>
+                  </button>
+                </div>
               ) : (
-                <div className="zero-debt-box">
-                  <Sparkles size={36} color="var(--primary)" style={{ margin: '0 auto 0.5rem auto' }} />
-                  <h4>{language === 'km' ? 'គ្មានការជំពាក់លុយគ្នាទេ!' : 'Everyone is settled up!'}</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                  {apiExpenses.map((exp) => {
+                    const payer = activeMembers.find((m) => m.id === exp.paidByMemberId) || { name: exp.paidByMemberId, avatar: '' };
+                    const splitCount = (exp.splitAmongMemberIds || []).length || 1;
+
+                    // Clean Currency Formatting logic
+                    const isUSD = exp.currency === 'USD';
+                    const mainAmountFormatted = isUSD ? formatUSD(exp.amount) : formatKHR(exp.amount);
+                    const convertedSubtextFormatted = isUSD
+                      ? `~${formatKHR(exp.amount * 4100)}`
+                      : `~${formatUSD(exp.amount / 4100)}`;
+
+                    return (
+                      <div
+                        key={exp.id}
+                        style={{
+                          backgroundColor: 'var(--card-bg)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '16px',
+                          padding: '1rem 1.25rem',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <MemberAvatar avatar={payer.avatar} name={payer.name} size={38} />
+                          <div>
+                            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.2rem', color: 'var(--text-main)' }}>{exp.title}</h4>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                              {language === 'km' ? 'ទូទាត់ដោយ:' : 'Paid by:'} <strong>{payer.name}</strong> •{' '}
+                              {language === 'km' ? 'ចែករំលែករវាង:' : 'Split among:'} {splitCount} {language === 'km' ? 'នាក់' : 'people'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                          <div style={{ textAlign: 'right' }}>
+                            <strong style={{ fontSize: '1.15rem', color: 'var(--primary)', display: 'block' }}>
+                              {mainAmountFormatted}
+                            </strong>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                              {convertedSubtextFormatted}
+                            </span>
+                          </div>
+
+                          {/* Edit & Delete Action Buttons */}
+                          <div style={{ display: 'flex', gap: '0.35rem' }}>
+                            <button
+                              onClick={() => handleEditExpenseClick(exp)}
+                              style={{
+                                backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                                border: 'none',
+                                color: '#0284c7',
+                                cursor: 'pointer',
+                                padding: '8px',
+                                borderRadius: '8px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                              title={language === 'km' ? 'កែប្រែចំណាយ' : 'Edit Expense'}
+                            >
+                              <Pencil size={15} />
+                            </button>
+
+                            <button
+                              onClick={() => deleteExpenseMutation.mutate(exp.id)}
+                              style={{
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                padding: '8px',
+                                borderRadius: '8px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                              title={language === 'km' ? 'លុបចំណាយ' : 'Delete Expense'}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
+
+            {/* Right: Settlement & Debt Summary */}
+            <div>
+              <div
+                style={{
+                  backgroundColor: 'var(--card-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '20px',
+                  padding: '1.5rem',
+                  position: 'sticky',
+                  top: '90px',
+                }}
+              >
+                <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <PieChart size={18} color="var(--primary)" />
+                  <span>{language === 'km' ? 'សេចក្តីសង្ខេបទូទាត់សងប្រាក់' : 'Debt Settlement Summary'}</span>
+                </h4>
+
+                {/* Total Expense Display with Clean Formatting */}
+                <div
+                  style={{
+                    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                    borderRadius: '16px',
+                    padding: '1.25rem 1rem',
+                    marginBottom: '1.25rem',
+                    textAlign: 'center',
+                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                  }}
+                >
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                    {language === 'km' ? 'សរុបចំណាយក្នុងដំណើរកម្សាន្តនេះ:' : 'Total Trip Expense:'}
+                  </span>
+                  <strong style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--primary)', display: 'block', lineHeight: 1.2 }}>
+                    {formattedTotalUSD}
+                  </strong>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '0.25rem', display: 'block' }}>
+                    ({formattedTotalKHR})
+                  </span>
+                </div>
+
+                {/* Settlements list */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h5 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                    {language === 'km' ? 'អ្នកត្រូវទូទាត់សងប្រាក់គ្នា:' : 'Who owes whom:'}
+                  </h5>
+
+                  {(() => {
+                    const validSettlements = settlements.filter((s: any) => {
+                      const fromM = activeMembers.find((m) => m.id === s.fromMemberId);
+                      const toM = activeMembers.find((m) => m.id === s.toMemberId);
+                      return !!fromM && !!toM && s.fromMemberId !== s.toMemberId;
+                    });
+
+                    if (validSettlements.length === 0) {
+                      return (
+                        <p style={{ fontSize: '0.85rem', color: '#10b981', textAlign: 'center', margin: '1rem 0' }}>
+                          {language === 'km' ? '✨ គ្មានបំណុលត្រូវទូទាត់សងគ្នាទេ!' : '✨ All expenses are balanced!'}
+                        </p>
+                      );
+                    }
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                        {validSettlements.map((s: any, idx: number) => {
+                          const fromMember = activeMembers.find((m) => m.id === s.fromMemberId)!;
+                          const toMember = activeMembers.find((m) => m.id === s.toMemberId)!;
+
+                          return (
+                            <div
+                              key={idx}
+                              style={{
+                                backgroundColor: 'var(--bg-main, #f8fafc)',
+                                borderRadius: '12px',
+                                padding: '0.75rem 0.875rem',
+                                fontSize: '0.85rem',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                border: '1px solid var(--border-color)',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <MemberAvatar avatar={fromMember.avatar} name={fromMember.name} size={22} />
+                                <strong>{fromMember.name}</strong>
+                                <span style={{ color: 'var(--text-muted)', margin: '0 2px' }}>➔</span>
+                                <MemberAvatar avatar={toMember.avatar} name={toMember.name} size={22} />
+                                <strong>{toMember.name}</strong>
+                              </div>
+                              <strong style={{ color: 'var(--primary)', flexShrink: 0, marginLeft: '0.5rem' }}>
+                                {formatUSD(s.amountUSD)} ({formatKHR(s.amountKHR)})
+                              </strong>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <button className="btn btn-secondary btn-full" onClick={() => setShowExportModal(true)}>
+                  <Download size={15} />
+                  <span>{language === 'km' ? 'ទាញយករបាយការណ៍សង្ខេប' : 'Export Trip Summary'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Modal to Add Expense */}
-      {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', padding: '1.5rem' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Plus size={20} color="var(--primary)" />
-              <span>{t.addExpense}</span>
-            </h3>
+      {/* CREATE NEW TRIP MODAL */}
+      {showCreateTripModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateTripModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '540px' }}>
+            <div className="modal-header-sticky">
+              <div className="modal-header-title-wrap">
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sparkles size={20} color="var(--primary)" />
+                  <span>{language === 'km' ? 'បង្កើតដំណើរកម្សាន្តថ្មី' : 'Create New Trip Expense Group'}</span>
+                </h3>
+              </div>
+              <button className="modal-icon-btn close-btn" onClick={() => setShowCreateTripModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
 
-            <form onSubmit={handleAddExpense} className="modern-form">
-              <InputField
-                label={t.expenseTitle}
-                required
-                placeholder="e.g. Guide Fee, Motorbike Fuel, Market Food"
-                value={expTitle}
-                onChange={(e) => setExpTitle(e.target.value)}
-              />
-
-              <div className="form-grid-2">
+            <form onSubmit={handleCreateTripSubmit} className="modern-form">
+              <div className="modal-body-scrollable">
                 <InputField
-                  label={t.amount}
-                  type="number"
-                  step="any"
+                  label={language === 'km' ? 'ឈ្មោះដំណើរកម្សាន្ត (Trip Title)' : 'Trip Title (e.g. Phnom Aural Summit)'}
+                  placeholder={language === 'km' ? 'ឧ. ទ្រីបទៅ Oral Mountain' : 'e.g. Oral Mountain Hike 2026'}
+                  value={newTripTitle}
+                  onChange={(e) => setNewTripTitle(e.target.value)}
                   required
-                  placeholder="0.00"
-                  icon={<DollarSign size={17} />}
-                  value={expAmount}
-                  onChange={(e) => setExpAmount(e.target.value)}
                 />
-                <SelectField
-                  label="Currency"
-                  value={expCurrency}
-                  onChange={(val) => setExpCurrency(val as 'USD' | 'KHR')}
-                  options={currencyOptions}
+
+                <InputField
+                  label={language === 'km' ? 'ទីតាំងរមណីយដ្ឋាន' : 'Destination / Location'}
+                  placeholder={language === 'km' ? 'ឧ. ភ្នំឱរ៉ាល់ (Phnom Aural)' : 'e.g. Phnom Aural, Kampong Speu'}
+                  value={newTripDestination}
+                  onChange={(e) => setNewTripDestination(e.target.value)}
                 />
+
+                <InputField
+                  label={language === 'km' ? 'ថ្ងៃខែកម្សាន្ត' : 'Trip Date'}
+                  type="date"
+                  value={newTripDate}
+                  onChange={(e) => setNewTripDate(e.target.value)}
+                />
+
+                {/* Enhanced Member Input with Custom Avatar / Emoji Picker */}
+                <div className="form-field-group">
+                  <label className="form-field-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{language === 'km' ? 'បញ្ជីសមាជិកចូលរួមដំណើរកម្សាន្ត:' : 'Trip Participants:'}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {language === 'km' ? 'បើមិនជ្រើសរើសរូប នឹងកំណត់ Emoji ដោយស្វ័យប្រវត្តិ' : 'Auto emoji set if no avatar url'}
+                    </span>
+                  </label>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div style={{ position: 'relative', width: '38px', height: '38px', flexShrink: 0 }}>
+                        <MemberAvatar avatar={newMemberAvatar || '🏕️'} name={newMemberName || 'New'} size={38} />
+                        <button
+                          type="button"
+                          onClick={() => setShowAvatarOptions(!showAvatarOptions)}
+                          title="Pick Avatar / Emoji"
+                          style={{
+                            position: 'absolute',
+                            bottom: -2,
+                            right: -2,
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--primary)',
+                            color: '#fff',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Smile size={11} />
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        className="custom-modern-input"
+                        placeholder={language === 'km' ? 'បញ្ចូលឈ្មោះសមាជិក...' : 'Add participant name...'}
+                        value={newMemberName}
+                        onChange={(e) => setNewMemberName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddMemberToNewTrip();
+                          }
+                        }}
+                        style={{ flex: 1 }}
+                      />
+
+                      <button type="button" className="btn btn-secondary" onClick={() => handleAddMemberToNewTrip()} style={{ padding: '0 0.875rem' }}>
+                        <UserPlus size={16} />
+                      </button>
+                    </div>
+
+                    {showAvatarOptions && (
+                      <div
+                        style={{
+                          backgroundColor: 'var(--bg-main)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '12px',
+                          padding: '0.75rem',
+                        }}
+                      >
+                        <div style={{ marginBottom: '0.5rem' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>
+                            {language === 'km' ? 'រូបតំណាង Image URL (តាមចំណង់ចំណូលចិត្ត):' : 'Custom Avatar Image URL (optional):'}
+                          </span>
+                          <input
+                            type="url"
+                            className="custom-modern-input"
+                            placeholder="https://images.unsplash.com/photo-..."
+                            value={newMemberAvatar}
+                            onChange={(e) => setNewMemberAvatar(e.target.value)}
+                            style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem' }}
+                          />
+                        </div>
+
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
+                          {language === 'km' ? 'ឬជ្រើសរើស Emoji តំណាង:' : 'Or pick an emoji icon:'}
+                        </span>
+                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                          {PRESET_MEMBER_EMOJIS.map((emoji) => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => {
+                                setNewMemberAvatar(emoji);
+                                setShowAvatarOptions(false);
+                              }}
+                              style={{
+                                border: newMemberAvatar === emoji ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                backgroundColor: newMemberAvatar === emoji ? 'rgba(16, 185, 129, 0.15)' : 'var(--card-bg)',
+                                borderRadius: '8px',
+                                width: '32px',
+                                height: '32px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                fontSize: '1rem',
+                              }}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {newTripMembers.map((m) => (
+                      <span
+                        key={m.id}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                          color: 'var(--primary)',
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.85rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        <MemberAvatar avatar={m.avatar} name={m.name} size={20} />
+                        <span>{m.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMemberFromNewTrip(m.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                            padding: '2px',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                          title="Remove member"
+                        >
+                          <X size={13} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <SelectField
-                label={t.paidBy}
-                value={expPaidBy}
-                onChange={(val) => setExpPaidBy(val)}
-                options={memberOptions}
-              />
-
-              <SelectField
-                label="Category"
-                value={expCategory}
-                onChange={(val) => setExpCategory(val as any)}
-                options={categoryOptions}
-              />
-
-              <div className="form-actions" style={{ marginTop: '1rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
-                  {t.close}
+              <div className="modal-actions-sticky">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowCreateTripModal(false)}>
+                  {language === 'km' ? 'បោះបង់' : 'Cancel'}
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {t.addExpense}
+                  <Plus size={16} />
+                  <span>{language === 'km' ? 'បង្កើតដំណើរកម្សាន្ត' : 'Create Trip'}</span>
                 </button>
               </div>
             </form>
@@ -443,17 +1005,140 @@ export const ExpenseSplitter: React.FC = () => {
         </div>
       )}
 
-      {/* Export Expense Modal */}
+      {/* ADD / EDIT EXPENSE ITEM MODAL */}
+      {showAddExpenseModal && (
+        <div className="modal-overlay" onClick={() => setShowAddExpenseModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+            <div className="modal-header-sticky">
+              <div className="modal-header-title-wrap">
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {editingExpenseId ? <Pencil size={20} color="var(--primary)" /> : <Plus size={20} color="var(--primary)" />}
+                  <span>
+                    {editingExpenseId
+                      ? language === 'km'
+                        ? 'កែប្រែការចំណាយ'
+                        : 'Edit Expense Item'
+                      : language === 'km'
+                      ? 'បញ្ចូលការចំណាយថ្មី'
+                      : 'Record New Expense Item'}
+                  </span>
+                </h3>
+              </div>
+              <button className="modal-icon-btn close-btn" onClick={() => setShowAddExpenseModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddExpenseSubmit} className="modern-form">
+              <div className="modal-body-scrollable">
+                <InputField
+                  label={language === 'km' ? 'បរិយាយការចំណាយ' : 'Expense Title'}
+                  placeholder={language === 'km' ? 'ឧ. ថ្លៃសាំង, ថ្លៃអ្នកនាំផ្លូវ, ថ្លៃម្ហូប' : 'e.g. Guide Fee, Fuel, Grocery'}
+                  value={expTitle}
+                  onChange={(e) => setExpTitle(e.target.value)}
+                  required
+                />
+
+                <div className="form-grid-2">
+                  <InputField
+                    label={language === 'km' ? 'ចំនួនទឹកប្រាក់' : 'Amount'}
+                    type="number"
+                    placeholder="0.00"
+                    value={expAmount}
+                    onChange={(e) => setExpAmount(e.target.value)}
+                    required
+                  />
+
+                  <SelectField
+                    label={language === 'km' ? 'រូបីយប័ណ្ណ' : 'Currency'}
+                    value={expCurrency}
+                    onChange={(val) => setExpCurrency(val as 'USD' | 'KHR')}
+                    options={currencyOptions}
+                  />
+                </div>
+
+                <div className="form-grid-2">
+                  <SelectField
+                    label={language === 'km' ? 'អ្នកចំណាយមុន (Paid By)' : 'Paid By'}
+                    value={expPaidBy}
+                    onChange={(val) => setExpPaidBy(val)}
+                    options={memberOptions}
+                  />
+
+                  <SelectField
+                    label={language === 'km' ? 'ប្រភេទចំណាយ' : 'Category'}
+                    value={expCategory}
+                    onChange={(val) => setExpCategory(val as any)}
+                    options={categoryOptions}
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label className="form-field-label">
+                    {language === 'km' ? 'ចែករំលែករវាងសមាជិក (Split Among):' : 'Split Among Participants:'}
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    {activeMembers.map((m) => {
+                      const isChecked = expSplitAmong.includes(m.id);
+                      return (
+                        <label
+                          key={m.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '8px',
+                            backgroundColor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-main)',
+                            border: `1px solid ${isChecked ? 'var(--primary)' : 'var(--border-color)'}`,
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setExpSplitAmong([...expSplitAmong, m.id]);
+                              } else {
+                                setExpSplitAmong(expSplitAmong.filter((id) => id !== m.id));
+                              }
+                            }}
+                          />
+                          <MemberAvatar avatar={m.avatar} name={m.name} size={20} />
+                          <span>{m.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions-sticky">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowAddExpenseModal(false)}>
+                  {language === 'km' ? 'បោះបង់' : 'Cancel'}
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  {editingExpenseId ? <Pencil size={16} /> : <Plus size={16} />}
+                  <span>{editingExpenseId ? (language === 'km' ? 'រក្សាទុកការកែប្រែ' : 'Save Changes') : (language === 'km' ? 'រក្សាទុកការចំណាយ' : 'Save Expense')}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EXPORT SUMMARY MODAL */}
       {showExportModal && (
         <ExportExpenseModal
-          members={members}
-          expenses={expenses}
+          expenses={apiExpenses}
+          members={activeMembers}
           debts={settlements}
-          totalExpenseUSD={totalExpenseUSD}
+          totalExpenseUSD={rawTotalUSD}
           onClose={() => setShowExportModal(false)}
         />
       )}
-
     </div>
   );
 };

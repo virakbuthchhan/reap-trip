@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
 import {
   ChevronDown, Check, MapPin, Bike, Car, Truck, Footprints, Anchor,
-  Tent, Mountain, Waves, Trees, DollarSign, Coins, User, UserCheck,
-  Fuel, Utensils, Package, ShieldAlert, Sparkles, Star
+  Tent, Mountain, Waves, Trees, DollarSign, Coins, User,
+  Fuel, Utensils, Package, Sparkles, Star
 } from 'lucide-react';
 
 export interface SelectOption {
@@ -70,9 +70,25 @@ export const SelectField: React.FC<SelectFieldProps> = ({
   className = ''
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((opt) => String(opt.value) === String(value));
+
+  // Toggle dropdown with automatic direction detection (open upward if near bottom)
+  const toggleDropdown = () => {
+    if (!isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      // If less than 240px below the dropdown trigger, open upward
+      if (spaceBelow < 240) {
+        setOpenUpward(true);
+      } else {
+        setOpenUpward(false);
+      }
+    }
+    setIsOpen(!isOpen);
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -93,7 +109,11 @@ export const SelectField: React.FC<SelectFieldProps> = ({
   };
 
   return (
-    <div className={`form-field-group ${fullWidth ? 'full-width' : ''} ${error ? 'has-error' : ''}`} ref={dropdownRef}>
+    <div
+      className={`form-field-group ${fullWidth ? 'full-width' : ''} ${error ? 'has-error' : ''} ${isOpen ? 'is-select-open' : ''}`}
+      ref={dropdownRef}
+      style={{ position: 'relative', zIndex: isOpen ? 100 : undefined }}
+    >
       {label && (
         <label className="form-field-label">
           {label}
@@ -106,7 +126,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
         <button
           type="button"
           className={`custom-select-trigger ${isOpen ? 'is-open' : ''} ${className}`}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={toggleDropdown}
         >
           <div className="trigger-content">
             {icon && <span className="input-icon-left-custom">{icon}</span>}
@@ -124,7 +144,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
 
         {/* Custom Modern Dropdown Menu */}
         {isOpen && (
-          <div className="custom-dropdown-menu">
+          <div className={`custom-dropdown-menu ${openUpward ? 'open-upward' : ''}`}>
             <div className="dropdown-options-list">
               {options.map((opt) => {
                 const isSelected = String(opt.value) === String(value);
@@ -149,7 +169,6 @@ export const SelectField: React.FC<SelectFieldProps> = ({
 
       {error && <span className="form-field-error">{error}</span>}
       {helperText && !error && <span className="form-field-helper">{helperText}</span>}
-
     </div>
   );
 };

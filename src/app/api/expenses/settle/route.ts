@@ -1,11 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 const USD_TO_KHR = 4100;
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    const expenses = await prisma.expenseItem.findMany();
+    let tripGroupId: string | undefined;
+
+    try {
+      const body = await req.json();
+      tripGroupId = body?.tripGroupId;
+    } catch (e) {
+      // Body may be empty if calculating global
+    }
+
+    const where = tripGroupId ? { tripGroupId } : {};
+    const expenses = await prisma.expenseItem.findMany({ where });
 
     // Calculate net balances in USD for each member
     const balances: Record<string, number> = {};

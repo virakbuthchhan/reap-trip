@@ -111,8 +111,20 @@ export interface TripMember {
   avatar: string;
 }
 
+export interface TripExpenseGroup {
+  id: string;
+  title: string;
+  destination?: string;
+  startDate?: string;
+  createdById?: string;
+  shareCode: string;
+  members: TripMember[];
+  createdAt?: string;
+}
+
 export interface ExpenseItem {
   id: string;
+  tripGroupId?: string;
   title: string;
   amount: number;
   currency: 'KHR' | 'USD';

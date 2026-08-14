@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Destination, LocalGuide, ExpenseItem, Recipe, TripReport, PackingItem } from '@/types';
+import { Destination, LocalGuide, ExpenseItem, Recipe, TripReport, PackingItem, TripExpenseGroup } from '@/types';
 
 // 1. Destinations Hook
 export function useDestinationsQuery(filters?: {
@@ -53,12 +53,45 @@ export function useGuidesQuery(destinationId?: string) {
   });
 }
 
-// 3. Expenses Hooks
-export function useExpensesQuery() {
-  return useQuery<ExpenseItem[]>({
-    queryKey: ['expenses'],
+// 3. Trip Groups & Expenses Hooks
+export function useTripGroupsQuery() {
+  return useQuery<(TripExpenseGroup & { expenseCount?: number; totalSpentUSD?: number; totalSpentKHR?: number })[]>({
+    queryKey: ['trip-groups'],
     queryFn: async () => {
-      const res = await fetch('/api/expenses');
+      const res = await fetch('/api/expenses/trips');
+      if (!res.ok) throw new Error('Failed to fetch trip expense groups');
+      return res.json();
+    },
+  });
+}
+
+export function useCreateTripGroupMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (groupData: Partial<TripExpenseGroup>) => {
+      const res = await fetch('/api/expenses/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(groupData),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to create trip group');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip-groups'] });
+    },
+  });
+}
+
+export function useExpensesQuery(tripGroupId?: string) {
+  return useQuery<ExpenseItem[]>({
+    queryKey: ['expenses', tripGroupId],
+    queryFn: async () => {
+      const url = tripGroupId ? `/api/expenses?tripGroupId=${tripGroupId}` : '/api/expenses';
+      const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch expenses');
       return res.json();
     },
@@ -80,8 +113,32 @@ export function useAddExpenseMutation() {
       }
       return res.json();
     },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['trip-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['settlements'] });
+    },
+  });
+}
+
+export function useUpdateExpenseMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (expense: Partial<ExpenseItem> & { id: string }) => {
+      const res = await fetch('/api/expenses', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(expense),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to update expense');
+      }
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['trip-groups'] });
       queryClient.invalidateQueries({ queryKey: ['settlements'] });
     },
   });
@@ -97,16 +154,21 @@ export function useDeleteExpenseMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['trip-groups'] });
       queryClient.invalidateQueries({ queryKey: ['settlements'] });
     },
   });
 }
 
-export function useSettlementsQuery() {
+export function useSettlementsQuery(tripGroupId?: string) {
   return useQuery({
-    queryKey: ['settlements'],
+    queryKey: ['settlements', tripGroupId],
     queryFn: async () => {
-      const res = await fetch('/api/expenses/settle', { method: 'POST' });
+      const res = await fetch('/api/expenses/settle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tripGroupId }),
+      });
       if (!res.ok) throw new Error('Failed to calculate settlements');
       return res.json();
     },
