@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
+import { USD_TO_KHR } from '@/constants/currency';
 
 const TripGroupSchema = z.object({
   title: z.string().min(2, 'Trip title is required'),
@@ -38,7 +39,6 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const USD_TO_KHR = 4100;
     const formattedTrips = trips.map((trip) => {
       const totalUSD = trip.expenses.reduce((sum, e) => {
         return sum + (e.currency === 'KHR' ? e.amount / USD_TO_KHR : e.amount);

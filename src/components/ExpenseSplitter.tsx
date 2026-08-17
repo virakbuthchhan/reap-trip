@@ -35,6 +35,7 @@ import {
   useDeleteExpenseMutation,
   useSettlementsQuery,
 } from '@/hooks/useApi';
+import { USD_TO_KHR } from '@/constants/currency';
 
 // Preset emojis for random fallback or quick picker
 const PRESET_MEMBER_EMOJIS = ['🏕️', '🧗', '🎒', '⛺', '🧭', '🌲', '🧢', '🚴', '🌄', '🥾', '🔥', '🛶', '📸', '🌾'];
@@ -314,7 +315,7 @@ export const ExpenseSplitter: React.FC = () => {
   const settlements = settlementData?.settlements || [];
   const rawTotalUSD = settlementData?.totalExpensesUSD || 0;
   const formattedTotalUSD = formatUSD(rawTotalUSD);
-  const formattedTotalKHR = formatKHR(rawTotalUSD * 4100);
+  const formattedTotalKHR = formatKHR(rawTotalUSD * USD_TO_KHR);
 
   return (
     <div className="expenses-page container">
@@ -606,8 +607,8 @@ export const ExpenseSplitter: React.FC = () => {
                     const isUSD = exp.currency === 'USD';
                     const mainAmountFormatted = isUSD ? formatUSD(exp.amount) : formatKHR(exp.amount);
                     const convertedSubtextFormatted = isUSD
-                      ? `~${formatKHR(exp.amount * 4100)}`
-                      : `~${formatUSD(exp.amount / 4100)}`;
+                      ? `~${formatKHR(exp.amount * USD_TO_KHR)}`
+                      : `~${formatUSD(exp.amount / USD_TO_KHR)}`;
 
                     return (
                       <div

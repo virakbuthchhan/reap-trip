@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-
-const USD_TO_KHR = 4100;
+import { USD_TO_KHR } from '@/constants/currency';
 
 export async function POST(req: NextRequest) {
   try {

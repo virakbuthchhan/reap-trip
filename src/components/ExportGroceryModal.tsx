@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { X, Printer, Copy, Check, Download, Tent, FileText, Image as ImageIcon, ShoppingCart, Maximize2, Minimize2 } from 'lucide-react';
+import { USD_TO_KHR } from '@/constants/currency';
 
 interface ExportGroceryModalProps {
   groceryList: { name: string; amount: number; unit: string; category: string; estCost: number }[];
@@ -27,7 +28,7 @@ export const ExportGroceryModal: React.FC<ExportGroceryModalProps> = ({
   const [downloading, setDownloading] = useState(false);
   const printableRef = useRef<HTMLDivElement>(null);
 
-  const totalCostKHR = totalCostUSD * 4000;
+  const totalCostKHR = totalCostUSD * USD_TO_KHR;
 
   const handlePrint = () => {
     window.print();

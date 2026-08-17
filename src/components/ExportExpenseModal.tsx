@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { TripMember, ExpenseItem, SettlementDebt } from '../types';
 import { X, Printer, Copy, Check, Download, Tent, FileText, Scale, Maximize2, Minimize2 } from 'lucide-react';
+import { USD_TO_KHR } from '@/constants/currency';
 
 interface ExportExpenseModalProps {
   members: TripMember[];
@@ -27,7 +28,7 @@ export const ExportExpenseModal: React.FC<ExportExpenseModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const totalExpenseKHR = totalExpenseUSD * 4000;
+  const totalExpenseKHR = totalExpenseUSD * USD_TO_KHR;
   const perPersonShareUSD = members.length > 0 ? totalExpenseUSD / members.length : 0;
 
   const handlePrint = () => {
@@ -366,7 +367,7 @@ export const ExportExpenseModal: React.FC<ExportExpenseModalProps> = ({
             <div className="stat-box">
               <span>EQUAL PER PERSON</span>
               <strong style={{ color: '#0284c7' }}>${perPersonShareUSD.toFixed(2)} USD</strong>
-              <span className="sub-text">~{(perPersonShareUSD * 4000).toLocaleString()} ៛</span>
+              <span className="sub-text">~{(perPersonShareUSD * USD_TO_KHR).toLocaleString()} ៛</span>
             </div>
           </div>
 

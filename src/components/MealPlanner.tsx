@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { AddRecipeModal } from './AddRecipeModal';
 import { ExportGroceryModal } from './ExportGroceryModal';
 import { Utensils, Users, ShoppingBag, Flame, Check, Sparkles, ChefHat, Grid, List, Plus, Printer, ArrowRight, BookOpen } from 'lucide-react';
+import { USD_TO_KHR } from '@/constants/currency';
 
 interface MealPlannerProps {
   recipes: Recipe[];
@@ -254,7 +255,7 @@ export const MealPlanner: React.FC<MealPlannerProps> = ({ recipes, onAddRecipe }
 
               <div className="grocery-total-badge">
                 <span>{language === 'km' ? 'ចំណាយសរុបប៉ាន់ស្មាន' : 'Estimated Total Cost'}:</span>
-                <strong>${totalGroceryCost.toFixed(2)} USD (~{(totalGroceryCost * 4000).toLocaleString()} ៛)</strong>
+                <strong>${totalGroceryCost.toFixed(2)} USD (~{(totalGroceryCost * USD_TO_KHR).toLocaleString()} ៛)</strong>
               </div>
             </div>
           </div>
